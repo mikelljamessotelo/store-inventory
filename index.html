@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Mattmat’s Product & Purchase List — Simple v2</title>
+<style>
+  :root{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial;}
+  body{margin:0;padding:14px;background:#f6f6f6;color:#111}
+  header{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+  h1{font-size:18px;margin:0}
+  .controls{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  button{background:#fff;border:1px solid #222;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:14px}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .view{display:none}
+  .view.active{display:block}
+  table{width:100%;border-collapse:collapse;background:#fff}
+  th,td{border:1px solid #222;padding:8px;text-align:left;font-size:13px}
+  th.sortable{cursor:pointer}
+  tr.selected{background:#fff8d6}
+  .topbar{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+  .search{flex:1}
+  input[type=text], input[type=number], select, textarea{padding:8px;border-radius:8px;border:1px solid #bbb;width:100%;box-sizing:border-box}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center}
+  .modal{background:#fff;padding:16px;border-radius:10px;min-width:320px;max-width:820px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .modal h3{margin-top:0}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .small{width:120px}
+  .btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+  .note{font-size:12px;color:#555}
+  .category-title{margin:18px 0 6px;font-weight:600}
+  .notes-td textarea{width:100%;height:44px;border-radius:6px;border:1px solid #ccc;padding:6px}
+  .touch-check{display:flex;align-items:center;justify-content:center;width:48px;height:36px}
+  .touch-check input[type=checkbox]{transform:scale(1.6);width:26px;height:26px}
+  .no-print{display:block}
+  @media print{header, .controls, .topbar, .save-load-row, .no-print{display:none !important} body{margin:0}}
+  @media (max-width:700px){.form-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Mattmat’s Product & Purchase List — Simple v2</h1>
+    <div class="note">Single-file — offline. Data saved to localStorage.</div>
+  </div>
+  <div class="controls">
+    <button id="btnAdd">➕ Add Item</button>
+    <button id="btnEditItem" disabled>✏️ Edit Item</button>
+    <button id="btnEditCost" disabled>💰 Edit Cost</button>
+    <button id="btnUncheck">🧹 Uncheck All</button>
+    <button id="btnImport">📂 Import CSV</button>
+    <button id="btnExport">💾 Export CSV</button>
+    <button id="btnCategories">📂 Categories</button>
+    <button id="btnGoPurchase">🛒 Purchase List</button>
+  </div>
+</header>
+
+<section id="productView" class="view active">
+  <div class="topbar">
+    <input id="search" class="search" type="text" placeholder="Search by Item Name or Barcode...">
+    <label style="width:110px">Rows: <input id="rowsPerPage" type="number" value="9999" min="1" style="width:60px"></label>
+  </div>
+  <div style="overflow:auto;max-height:62vh">
+    <table id="productTable">
+      <thead>
+        <tr>
+          <th class="sortable" data-key="category">Category</th>
+          <th class="sortable" data-key="barcode">Barcode</th>
+          <th class="sortable" data-key="name">Item Name</th>
+          <th style="width:72px">✅</th>
+          <th class="sortable" data-key="cost">Cost</th>
+          <th class="sortable" data-key="sellPrice">Sell Price</th>
+          <th>Suggested Sell Price</th>
+          <th>Mark-Up</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="purchaseView" class="view">
+  <div class="save-load-row no-print" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+    <button id="btnBack">◀ Back</button>
+    <button id="btnSavePurchase">💾 Save Purchase List</button>
+    <select id="savedLists"></select>
+    <button id="btnLoadPurchase">⤵ Load</button>
+    <button id="btnPrint">🖨️ Print Purchase List</button>
+  </div>
+  <div id="purchaseTables"></div>
+</section>
+
+<section id="categoriesView" class="view">
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+    <button id="btnBackFromCategories">◀ Back</button>
+    <button id="btnAddCategory">➕ Add Category</button>
+    <button id="btnExportCategories">💾 Export Categories</button>
+    <button id="btnImportCategories">📂 Import Categories</button>
+  </div>
+  <div style="overflow:auto;max-height:68vh">
+    <table id="categoriesTable"><thead><tr><th>Category</th><th>Actions</th></tr></thead><tbody></tbody></table>
+  </div>
+</section>
+
+<!-- Add/Edit Item Modal -->
+<div id="modalItem" class="modal-backdrop">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 id="modalItemTitle">Add Item</h3>
+    <div class="form-grid">
+      <div>
+        <label>Category</label>
+        <select id="itemCategory"></select>
+      </div>
+      <div>
+        <label>Barcode</label>
+        <input id="itemBarcode" type="text">
+      </div>
+      <div style="grid-column:1/3">
+        <label>Item Name</label>
+        <input id="itemName" type="text">
+      </div>
+      <div>
+        <label>Packs</label>
+        <input id="itemPacks" type="number" min="0" value="1">
+      </div>
+      <div>
+        <label>Pcs per Pack</label>
+        <input id="itemPcsPerPack" type="number" min="1" value="1">
+      </div>
+      <div>
+        <label>Cost per Pack</label>
+        <input id="itemCostPerPack" type="number" min="0" step="any" value="1">
+      </div>
+      <div>
+        <label>Cost (auto)</label>
+        <input id="itemCost" type="number" readonly>
+      </div>
+      <div>
+        <label>Sell Price (manual)</label>
+        <input id="itemSellPrice" type="number" min="0" step="any" value="0">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button id="itemCancel">Cancel</button>
+      <button id="itemSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Cost Modal -->
+<div id="modalEditCost" class="modal-backdrop">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3>Edit Cost</h3>
+    <div class="form-grid">
+      <div>
+        <label>Packs</label>
+        <input id="editPacks" type="number" min="0">
+      </div>
+      <div>
+        <label>Pcs per Pack</label>
+        <input id="editPcsPerPack" type="number" min="1">
+      </div>
+      <div>
+        <label>Cost per Pack</label>
+        <input id="editCostPerPack" type="number" min="0" step="any">
+      </div>
+      <div>
+        <label>Cost (auto)</label>
+        <input id="editCost" type="number" readonly>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button id="editCancel">Cancel</button>
+      <button id="editSave">Save Cost</button>
+    </div>
+  </div>
+</div>
+
+<input id="fileInput" type="file" accept="text/csv" style="display:none">
+<input id="fileInputCats" type="file" accept="text/csv" style="display:none">
+
+<script>
+(function(){
+  const KEY = 'mattmat_products_v2';
+  const KEY_CATS = 'mattmat_categories_v2';
+  const KEY_SAVED_PURCHASES = 'mattmat_saved_purchase_lists_v2';
+
+  // Elements
+  const productTableBody = document.querySelector('#productTable tbody');
+  const searchInput = document.getElementById('search');
+  const btnAdd = document.getElementById('btnAdd');
+  const btnEditItem = document.getElementById('btnEditItem');
+  const btnEditCost = document.getElementById('btnEditCost');
+  const btnUncheck = document.getElementById('btnUncheck');
+  const btnImport = document.getElementById('btnImport');
+  const btnExport = document.getElementById('btnExport');
+  const btnCategories = document.getElementById('btnCategories');
+  const btnGoPurchase = document.getElementById('btnGoPurchase');
+  const productView = document.getElementById('productView');
+  const purchaseView = document.getElementById('purchaseView');
+  const categoriesView = document.getElementById('categoriesView');
+  const btnBack = document.getElementById('btnBack');
+  const btnPrint = document.getElementById('btnPrint');
+  const purchaseTables = document.getElementById('purchaseTables');
+  const savedListsSelect = document.getElementById('savedLists');
+  const btnSavePurchase = document.getElementById('btnSavePurchase');
+  const btnLoadPurchase = document.getElementById('btnLoadPurchase');
+  const fileInput = document.getElementById('fileInput');
+  const fileInputCats = document.getElementById('fileInputCats');
+  const rowsPerPage = document.getElementById('rowsPerPage');
+
+  // Modals & item fields
+  const modalItem = document.getElementById('modalItem');
+  const modalItemTitle = document.getElementById('modalItemTitle');
+  const itemCategory = document.getElementById('itemCategory');
+  const itemBarcode = document.getElementById('itemBarcode');
+  const itemName = document.getElementById('itemName');
+  const itemPacks = document.getElementById('itemPacks');
+  const itemPcsPerPack = document.getElementById('itemPcsPerPack');
+  const itemCostPerPack = document.getElementById('itemCostPerPack');
+  const itemCost = document.getElementById('itemCost');
+  const itemSellPrice = document.getElementById('itemSellPrice');
+  const itemCancel = document.getElementById('itemCancel');
+  const itemSave = document.getElementById('itemSave');
+
+  const modalEditCost = document.getElementById('modalEditCost');
+  const editPacks = document.getElementById('editPacks');
+  const editPcsPerPack = document.getElementById('editPcsPerPack');
+  const editCostPerPack = document.getElementById('editCostPerPack');
+  const editCost = document.getElementById('editCost');
+  const editCancel = document.getElementById('editCancel');
+  const editSave = document.getElementById('editSave');
+
+  // Categories
+  const btnBackFromCategories = document.getElementById('btnBackFromCategories');
+  const btnAddCategory = document.getElementById('btnAddCategory');
+  const btnExportCategories = document.getElementById('btnExportCategories');
+  const btnImportCategories = document.getElementById('btnImportCategories');
+  const categoriesTableBody = document.querySelector('#categoriesTable tbody');
+
+  // State
+  let products = [];
+  let categories = [];
+  let selectedId = null;
+  let sortState = {key:null,asc:true};
+
+  // Helpers
+  function uid(){return 'id_'+Math.random().toString(36).slice(2,9)}
+  function save(){localStorage.setItem(KEY, JSON.stringify(products))}
+  function load(){try{products = JSON.parse(localStorage.getItem(KEY))||[]}catch(e){products=[]}}
+  function saveCats(){localStorage.setItem(KEY_CATS, JSON.stringify(categories))}
+  function loadCats(){try{categories = JSON.parse(localStorage.getItem(KEY_CATS))||[]}catch(e){categories=[]}}
+  function saveSavedLists(lists){localStorage.setItem(KEY_SAVED_PURCHASES, JSON.stringify(lists))}
+  function loadSavedLists(){try{return JSON.parse(localStorage.getItem(KEY_SAVED_PURCHASES))||[]}catch(e){return[]}}
+
+  // Cost formula Option B (final): Cost = CostPerPack ÷ (Packs × PcsPerPack)
+  function computeCost(packs, pcsPerPack, costPerPack){
+    packs = Number(packs)||0; pcsPerPack = Number(pcsPerPack)||0; costPerPack = Number(costPerPack)||0;
+    if(packs*pcsPerPack === 0) return 0;
+    return costPerPack / (packs * pcsPerPack);
+  }
+  function computeSuggested(cost){return (Number(cost)||0) * 1.2}
+  function computeMarkup(sell,cost){return (Number(sell)||0) - (Number(cost)||0)}
+
+  // UI helpers
+  function formatNumber(v){ if(v===undefined || v===null) return ''; return (Number(v) || 0).toFixed(2); }
+  function escapeHtml(s){return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+  // Render product table
+  function refreshTable(){
+    productTableBody.innerHTML = '';
+    let q = searchInput.value.trim().toLowerCase();
+    let rows = products.slice();
+    if(sortState.key){
+      rows.sort((a,b)=>{
+        let A = a[sortState.key]; let B = b[sortState.key];
+        if(typeof A === 'string') A=A.toLowerCase(); if(typeof B==='string') B=B.toLowerCase();
+        if(A<B) return sortState.asc?-1:1; if(A>B) return sortState.asc?1:-1; return 0;
+      })
+    }
+    if(q){rows = rows.filter(it=> (it.name||'').toLowerCase().includes(q) || (it.barcode||'').toLowerCase().includes(q))}
+    const max = Number(rowsPerPage.value)||rows.length;
+    rows.slice(0,max).forEach(it=>{
+      const tr = document.createElement('tr'); tr.dataset.id = it.id;
+      if(it.id === selectedId) tr.classList.add('selected');
+      const chkCell = document.createElement('td'); chkCell.style.textAlign='center'; chkCell.className='touch-check';
+      const chk = document.createElement('input'); chk.type='checkbox'; chk.dataset.id=it.id; chk.checked = !!it.checked; chk.addEventListener('change', ()=>{ it.checked = chk.checked; save(); });
+      // make whole cell toggle on touch/click
+      chkCell.addEventListener('click',(e)=>{ if(e.target.tagName.toLowerCase()!=='input'){ chk.checked = !chk.checked; chk.dispatchEvent(new Event('change')); } });
+      chkCell.appendChild(chk);
+
+      tr.innerHTML = `\n        <td>${escapeHtml(it.category||'')}</td>\n        <td>${escapeHtml(it.barcode||'')}</td>\n        <td>${escapeHtml(it.name||'')}</td>\n        `;
+      tr.appendChild(chkCell);
+      const tdCost = document.createElement('td'); tdCost.textContent = formatNumber(it.cost); tr.appendChild(tdCost);
+      const tdSell = document.createElement('td'); tdSell.textContent = formatNumber(it.sellPrice); tr.appendChild(tdSell);
+      const tdSuggested = document.createElement('td'); tdSuggested.textContent = formatNumber(it.suggestedSellPrice); tr.appendChild(tdSuggested);
+      const tdMarkup = document.createElement('td'); tdMarkup.textContent = formatNumber(it.markup); tr.appendChild(tdMarkup);
+
+      tr.addEventListener('click', (e)=>{
+        if(e.target.tagName.toLowerCase() === 'input') return; // ignore checkbox clicks
+        selectedId = it.id; btnEditCost.disabled=false; btnEditItem.disabled=false; refreshTable();
+      });
+      productTableBody.appendChild(tr);
+    });
+  }
+
+  // Init
+  function init(){ loadCats(); load(); renderCategoryOptions(); bindEvents(); refreshTable(); populateSavedLists(); renderCategoriesTable(); }
+
+  // Category helpers
+  function renderCategoryOptions(selected){ itemCategory.innerHTML='';
+    const optNew = document.createElement('option'); optNew.value='__add_new__'; optNew.textContent='➕ Add New Category'; itemCategory.appendChild(optNew);
+    categories.forEach(c=>{ const o = document.createElement('option'); o.value=c; o.textContent=c; itemCategory.appendChild(o); });
+    if(selected) itemCategory.value = selected; else if(categories.length) itemCategory.selectedIndex = 1; else itemCategory.selectedIndex = 0;
+  }
+  function addCategory(name){ if(!name) return; if(!categories.includes(name)){ categories.push(name); saveCats(); renderCategoryOptions(name); renderCategoriesTable(); } }
+  function renderCategoriesTable(){ categoriesTableBody.innerHTML=''; categories.forEach((c,i)=>{
+    const tr = document.createElement('tr'); tr.innerHTML = `<td>${escapeHtml(c)}</td><td><button data-i="${i}" class="edit-cat">Edit</button> <button data-i="${i}" class="del-cat">Delete</button></td>`;
+    categoriesTableBody.appendChild(tr);
+  });
+  // bind
+  categoriesTableBody.querySelectorAll('.edit-cat').forEach(btn=>btn.addEventListener('click', ()=>{
+    const i=Number(btn.dataset.i); const newName = prompt('Edit category', categories[i]); if(newName && newName.trim()){ const old = categories[i]; categories[i]=newName.trim(); saveCats(); renderCategoryOptions(); renderCategoriesTable(); // update products that had old category? leave as-is
+    }
+  }));
+  categoriesTableBody.querySelectorAll('.del-cat').forEach(btn=>btn.addEventListener('click', ()=>{
+    const i=Number(btn.dataset.i); if(!confirm('Delete category and remove from products?')) return; const name = categories[i]; categories.splice(i,1); // remove from products
+    products.forEach(p=>{ if(p.category===name) p.category=''; }); saveCats(); save(); renderCategoryOptions(); renderCategoriesTable(); refreshTable(); }));
+  }
+
+  // Events
+  function bindEvents(){
+    document.querySelectorAll('th.sortable').forEach(th=>th.addEventListener('click', ()=>{ const key = th.dataset.key; if(sortState.key===key) sortState.asc=!sortState.asc; else {sortState.key=key; sortState.asc=true} refreshTable(); }));
+    searchInput.addEventListener('input', ()=>refreshTable()); rowsPerPage.addEventListener('change', ()=>refreshTable());
+
+    btnAdd.addEventListener('click', ()=>openItemModal('add'));
+    itemCancel.addEventListener('click', ()=>closeModal(modalItem)); itemSave.addEventListener('click', saveItemFromModal);
+    itemCategory.addEventListener('change', ()=>{ if(itemCategory.value==='__add_new__'){ const n = prompt('New category name:'); if(n && n.trim()){ addCategory(n.trim()); } else { renderCategoryOptions(); } } });
+    [itemPacks,itemPcsPerPack,itemCostPerPack].forEach(el=>el.addEventListener('input', ()=>{ itemCost.value = computeCost(itemPacks.value,itemPcsPerPack.value,itemCostPerPack.value).toFixed(4); }));
+
+    btnEditItem.addEventListener('click', ()=>{ if(!selectedId) return; openItemModal('edit'); });
+
+    btnEditCost.addEventListener('click', ()=>{ if(!selectedId) return; openEditCostModal(); });
+    editCancel.addEventListener('click', ()=>closeModal(modalEditCost)); editSave.addEventListener('click', saveEditedCost);
+    [editPacks,editPcsPerPack,editCostPerPack].forEach(el=>el.addEventListener('input', ()=>{ editCost.value = computeCost(editPacks.value,editPcsPerPack.value,editCostPerPack.value).toFixed(4); }));
+
+    btnUncheck.addEventListener('click', ()=>{ if(!confirm('Uncheck ALL items?')) return; products.forEach(p=>p.checked=false); save(); refreshTable(); });
+
+    btnImport.addEventListener('click', ()=>fileInput.click()); fileInput.addEventListener('change', handleFileImport);
+    btnExport.addEventListener('click', exportCSV);
+
+    btnCategories.addEventListener('click', ()=>showView('categories'));
+    btnBackFromCategories.addEventListener('click', ()=>showView('product'));
+    btnAddCategory.addEventListener('click', ()=>{ const n = prompt('New category name:'); if(n && n.trim()){ addCategory(n.trim()) } });
+    btnExportCategories.addEventListener('click', exportCategoriesCSV);
+    btnImportCategories.addEventListener('click', ()=>fileInputCats.click()); fileInputCats.addEventListener('change', handleCategoriesImport);
+
+    btnGoPurchase.addEventListener('click', ()=>showView('purchase'));
+    btnBack.addEventListener('click', ()=>showView('product'));
+    btnPrint.addEventListener('click', ()=>window.print());
+
+    btnSavePurchase.addEventListener('click', savePurchaseList); btnLoadPurchase.addEventListener('click', loadSelectedPurchaseList);
+
+    document.addEventListener('keydown', (e)=>{ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='e'){ e.preventDefault(); exportCSV(); } });
+  }
+
+  // Modal helpers
+  function showModal(el){ el.style.display='flex'; }
+  function closeModal(el){ el.style.display='none'; }
+
+  // Open add/edit item modal
+  function openItemModal(mode){ renderCategoryOptions(); if(mode==='add'){ modalItemTitle.textContent='Add Item'; itemCategory.value = categories.length? categories[0] : '__add_new__'; itemBarcode.value=''; itemName.value=''; itemPacks.value=1; itemPcsPerPack.value=1; itemCostPerPack.value=1; itemCost.value = computeCost(1,1,1).toFixed(4); itemSellPrice.value = 0; itemSave.dataset.mode='add'; showModal(modalItem); }
+  else { const p = products.find(x=>x.id===selectedId); if(!p) return; modalItemTitle.textContent='Edit Item'; renderCategoryOptions(p.category); itemCategory.value = p.category || (categories[0]||''); itemBarcode.value = p.barcode||''; itemName.value = p.name||''; itemPacks.value = p.packs||1; itemPcsPerPack.value = p.pcsPerPack||1; itemCostPerPack.value = p.costPerPack||1; itemCost.value = computeCost(itemPacks.value,itemPcsPerPack.value,itemCostPerPack.value).toFixed(4); itemSellPrice.value = p.sellPrice||0; itemSave.dataset.mode='edit'; showModal(modalItem); }
+  }
+
+  // Save item from modal (add/edit)
+  function saveItemFromModal(){ const mode = itemSave.dataset.mode||'add'; const cat = itemCategory.value==='__add_new__'? prompt('New category name:') : itemCategory.value; if(cat==='__add_new__' || !cat){ alert('Please choose or add a category.'); return; } if(!categories.includes(cat)) addCategory(cat);
+    const barcode = itemBarcode.value.trim(); const name = itemName.value.trim(); const packs = Number(itemPacks.value)||0; const pcs = Number(itemPcsPerPack.value)||0; const cpp = Number(itemCostPerPack.value)||0; const sell = Number(itemSellPrice.value)||0; const costVal = computeCost(packs,pcs,cpp);
+    if(mode==='add'){ const it = {id:uid(), category:cat, barcode:barcode, name:name, packs:packs, pcsPerPack:pcs, costPerPack:cpp, cost:costVal, sellPrice:sell, suggestedSellPrice:computeSuggested(costVal), markup:computeMarkup(sell,costVal), checked:false, notes:''}; products.push(it); }
+    else { const p = products.find(x=>x.id===selectedId); if(!p) return; p.category=cat; p.barcode=barcode; p.name=name; p.packs=packs; p.pcsPerPack=pcs; p.costPerPack=cpp; p.cost=costVal; p.sellPrice=sell; p.suggestedSellPrice=computeSuggested(costVal); p.markup=computeMarkup(sell,costVal); }
+    save(); closeModal(modalItem); refreshTable(); renderCategoriesTable();
+  }
+
+  // Edit Cost modal
+  function openEditCostModal(){ const p = products.find(x=>x.id===selectedId); if(!p) return; editPacks.value = p.packs||0; editPcsPerPack.value = p.pcsPerPack||1; editCostPerPack.value = p.costPerPack||1; editCost.value = computeCost(editPacks.value,editPcsPerPack.value,editCostPerPack.value).toFixed(4); showModal(modalEditCost); }
+  function saveEditedCost(){ const p = products.find(x=>x.id===selectedId); if(!p) return; const packs = Number(editPacks.value)||0; const pcs = Number(editPcsPerPack.value)||0; const cpp = Number(editCostPerPack.value)||0; const costVal = computeCost(packs,pcs,cpp); p.packs=packs; p.pcsPerPack=pcs; p.costPerPack=cpp; p.cost=costVal; p.suggestedSellPrice=computeSuggested(costVal); p.markup=computeMarkup(p.sellPrice||0,costVal); save(); closeModal(modalEditCost); refreshTable(); }
+
+  // CSV import/export (products). Simple CSV: headers line then rows. Fields without commas recommended.
+  function parseCSV(text){ const lines = text.split(/\r?\n/).filter(l=>l.trim().length>0); if(lines.length===0) return []; const headers = lines[0].split(',').map(h=>h.trim().toLowerCase()); const rows = lines.slice(1).map(line=>{ const cols = line.split(','); const obj = {}; headers.forEach((h,i)=>obj[h]= (cols[i]||'').trim()); return obj; }); return rows; }
+
+  function handleFileImport(e){ const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = function(){ try{ const rows = parseCSV(r.result); rows.forEach(rw=>{ const packs = Number(rw.packs)||0; const pcs = Number(rw.pcsperpack)||0; const cpp = Number(rw.costperpack)||0; const costVal = computeCost(packs,pcs,cpp); const sell = Number(rw.sellprice)||0; const cat = rw.category || ''; if(cat && !categories.includes(cat)) addCategory(cat); const item = {id:uid(), category:cat, barcode:rw.barcode||'', name:rw.name||'', packs:packs, pcsPerPack:pcs, costPerPack:cpp, cost:costVal, sellPrice:sell, suggestedSellPrice:computeSuggested(costVal), markup:computeMarkup(sell,costVal), checked: (String(rw.checked||'').toLowerCase()==='true'), notes: rw.notes||''}; products.push(item); }); save(); refreshTable(); populateSavedLists(); renderCategoriesTable(); alert('Import completed: '+rows.length+' rows appended.'); }catch(err){ alert('Import error: '+err.message); } } ; r.readAsText(f); }
+
+  function exportCSV(){ const hdr = ['category','barcode','name','packs','pcsperpack','costperpack','cost','sellprice','suggestedsellprice','markup','checked','notes']; const lines=[hdr.join(',')]; products.forEach(p=>{ const cols=[p.category,p.barcode,p.name,p.packs,p.pcsPerPack,p.costPerPack,p.cost,p.sellPrice,p.suggestedSellPrice,p.markup,p.checked,p.notes]; lines.push(cols.map(c=>String(c).replace(/,/g,'')).join(',')); }); const blob = new Blob([lines.join('\n')],{type:'text/csv'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='mattmat_products_v2.csv'; a.click(); URL.revokeObjectURL(url); }
+
+  // Categories import/export
+  function exportCategoriesCSV(){ const hdr=['category']; const lines=[hdr.join(',')]; categories.forEach(c=>lines.push([c].join(','))); const blob = new Blob([lines.join('\n')],{type:'text/csv'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='mattmat_categories_v2.csv'; a.click(); URL.revokeObjectURL(url); }
+  function handleCategoriesImport(e){ const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = function(){ try{ const rows = parseCSV(r.result); rows.forEach(rw=>{ const name = rw.category || rw.name || ''; if(name && !categories.includes(name)) categories.push(name); }); saveCats(); renderCategoryOptions(); renderCategoriesTable(); alert('Imported categories: '+rows.length); }catch(err){ alert('Categories import error: '+err.message); } }; r.readAsText(f); }
+
+  // Purchase List
+  function renderPurchaseTables(){ purchaseTables.innerHTML=''; const checked = products.filter(p=>p.checked); if(checked.length===0){ purchaseTables.innerHTML='<div class="note">No items selected for purchase.</div>'; return; } const groups = {}; checked.forEach(it=>{ const c = it.category||'Uncategorized'; if(!groups[c]) groups[c]=[]; groups[c].push(it); }); Object.keys(groups).forEach(cat=>{ const div = document.createElement('div'); const h = document.createElement('div'); h.className='category-title'; h.textContent = cat; div.appendChild(h); const table = document.createElement('table'); const thead = document.createElement('thead'); thead.innerHTML = '<tr><th></th><th>Item Name</th><th>Cost Per Pack</th><th>Notes</th></tr>'; const tbody = document.createElement('tbody'); groups[cat].forEach(it=>{ const tr = document.createElement('tr'); tr.dataset.barcode = it.barcode || it.id; tr.innerHTML = `<td style="width:36px"></td><td>${escapeHtml(it.name||'')}</td><td>${formatNumber(it.costPerPack||it.cost)}</td><td class="notes-td"><textarea data-barcode="${it.barcode||it.id}">${escapeHtml(it.notes||'')}</textarea></td>`; tbody.appendChild(tr); }); table.appendChild(thead); table.appendChild(tbody); div.appendChild(table); purchaseTables.appendChild(div); }); purchaseTables.querySelectorAll('textarea').forEach(tx=>{ tx.addEventListener('input', ()=>{ const barcode = tx.dataset.barcode; const p = products.find(x=> (x.barcode||x.id) == barcode); if(p){ p.notes = tx.value; save(); } }); }); }
+
+  function savePurchaseList(){ const name = prompt('Enter a name for this purchase list:'); if(!name) return; const selected = products.filter(p=>p.checked).map(p=>({barcode:p.barcode||p.id, notes:p.notes||''})); if(selected.length===0){ alert('No items selected to save.'); return; } const lists = loadSavedLists(); lists.push({name:name, items:selected, created: Date.now()}); saveSavedLists(lists); populateSavedLists(); alert('Purchase list saved.'); }
+  function populateSavedLists(){ const lists = loadSavedLists(); savedListsSelect.innerHTML = ''; lists.forEach((l,i)=>{ const opt = document.createElement('option'); opt.value=i; opt.textContent = l.name + ' ('+ new Date(l.created).toLocaleString()+')'; savedListsSelect.appendChild(opt); }); if(lists.length===0){ const opt = document.createElement('option'); opt.value=''; opt.textContent='-- no saved lists --'; savedListsSelect.appendChild(opt); } }
+  function loadSelectedPurchaseList(){ const idx = savedListsSelect.value; if(idx===''){ alert('No saved list selected.'); return; } const lists = loadSavedLists(); const sel = lists[Number(idx)]; if(!sel) return; products.forEach(p=> p.checked = false); sel.items.forEach(it=>{ const p = products.find(x=> (x.barcode||x.id) == it.barcode); if(p){ p.checked = true; p.notes = it.notes || p.notes; } }); save(); refreshTable(); showView('purchase'); renderPurchaseTables(); alert('Loaded saved purchase list: '+sel.name); }
+
+  // View switching
+  function showView(which){ if(which==='purchase'){ productView.classList.remove('active'); categoriesView.classList.remove('active'); purchaseView.classList.add('active'); renderPurchaseTables(); } else if(which==='categories'){ productView.classList.remove('active'); purchaseView.classList.remove('active'); categoriesView.classList.add('active'); renderCategoriesTable(); } else { purchaseView.classList.remove('active'); categoriesView.classList.remove('active'); productView.classList.add('active'); } }
+
+  // Init
+  init();
+})();
+</script>
+</body>
+</html>
