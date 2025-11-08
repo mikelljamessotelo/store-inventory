@@ -1414,6 +1414,20 @@ function handleDriveImportAll() {
       clearInterval(intId);
     }
   }, 700);
+// Force-enable Drive Connect if everything is ready
+setTimeout(() => {
+  try {
+    if (window.gapi && window.gapi.client && window.google && window.google.accounts) {
+      const btn = document.getElementById("btnDriveConnect");
+      if (btn) btn.disabled = false;
+      const status = document.getElementById("driveStatus");
+      if (status) status.textContent = "Drive: Ready (connected scripts)";
+      console.log("✅ Drive scripts ready — Connect button enabled.");
+    }
+  } catch(e) {
+    console.warn("Drive enable fallback error:", e);
+  }
+}, 2000);
 
 })();
 </script>
