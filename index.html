@@ -5,64 +5,247 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Mattmat’s Inventory — Simple v3.2.0 (Drive Enabled)</title>
 <style>
-  :root{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial;}
-  body{margin:0;padding:14px;background:#f6f6f6;color:#111}
-  header{display:flex;gap:12px;align-items:center;margin-bottom:12px}
-  h1{font-size:18px;margin:0}
-  .controls{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
-  button{background:#fff;border:1px solid #222;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:14px}
-  button:disabled{opacity:.5;cursor:not-allowed}
-  .view{display:none}
-  .view.active{display:block}
-  table{width:100%;border-collapse:collapse;background:#fff}
-  th,td{border:1px solid #222;padding:8px;text-align:left;font-size:13px;vertical-align:middle}
-  th.sortable{cursor:pointer}
-  tr.selected{background:#fff8d6}
-  .topbar{display:flex;gap:8px;margin-bottom:8px;align-items:center}
-  .search{flex:1}
-  input[type=text], input[type=number], select, textarea{padding:8px;border-radius:8px;border:1px solid #bbb;width:100%;box-sizing:border-box}
-  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center}
-  .modal{background:#fff;padding:16px;border-radius:10px;min-width:320px;max-width:900px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-  .modal h3{margin-top:0}
-  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .small{width:120px}
-  .btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
-  .note{font-size:12px;color:#555}
-  .notes-td textarea{width:100%;height:44px;border-radius:6px;border:1px solid #ccc;padding:6px}
-  .touch-check{display:flex;align-items:center;justify-content:center;width:56px;height:44px}
-  .touch-check input[type=checkbox]{transform:scale(1.6);width:28px;height:28px}
-  .no-print{display:block}
-  .note-print{display:none}
-  @media print{
-    header, .controls, .topbar, .save-load-row, .no-print{display:none !important}
-    body{margin:0}
-    textarea.note-input{display:none !important}
-    .note-print{display:block;padding:6px;border:0}
-    table{page-break-inside:auto}
-    tr{page-break-inside:avoid;page-break-after:auto}
+  :root {
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
   }
-  @media (max-width:700px){.form-grid{grid-template-columns:1fr}}
-  .drive-status{font-size:13px;padding:6px;border-radius:6px;border:1px dashed #bbb;background:#fff;margin-left:6px}
 
-  /* Receipt-style print rules (compact, horizontal borders only) */
-  @media print {
-    header, .controls, .topbar, .save-load-row, .no-print {display:none !important}
-    body {margin:0; padding:4px; font-size:12px}
-    #purchaseContainer table {width:100%; border-collapse:collapse; border:none}
-    #purchaseContainer th, #purchaseContainer td {
-      border-top:1px solid #000;
-      border-bottom:1px solid #000;
-      border-left:none; border-right:none;
-      padding:4px 6px;
-      font-size:12px;
+  body {
+    margin: 0;
+    padding: 14px;
+    background: #f6f6f6;
+    color: #111;
+  }
+
+  header {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-size: 18px;
+    margin: 0;
+  }
+
+  .controls {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  button {
+    background: #fff;
+    border: 1px solid #222;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .view {
+    display: none;
+  }
+
+  .view.active {
+    display: block;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+  }
+
+  /* Bigger, more readable tables */
+  th, td {
+    border: 1px solid #222;
+    padding: 10px;
+    text-align: left;
+    font-size: 15px;
+    vertical-align: middle;
+  }
+
+  th.sortable {
+    cursor: pointer;
+  }
+
+  tr.selected {
+    background: #fff8d6;
+  }
+
+  .topbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+
+  .search {
+    flex: 1;
+  }
+
+  input[type=text], input[type=number], select, textarea {
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #bbb;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal {
+    background: #fff;
+    padding: 16px;
+    border-radius: 10px;
+    min-width: 320px;
+    max-width: 900px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  }
+
+  .modal h3 {
+    margin-top: 0;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .small {
+    width: 120px;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 12px;
+  }
+
+  .note {
+    font-size: 12px;
+    color: #555;
+  }
+
+  .notes-td textarea {
+    width: 100%;
+    height: 44px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    padding: 6px;
+  }
+
+  /* Smaller, centered checkboxes */
+  .touch-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 40px;
+  }
+
+  .touch-check input[type=checkbox] {
+    transform: scale(1.2);
+    width: 20px;
+    height: 20px;
+  }
+
+  .no-print {
+    display: block;
+  }
+
+  .note-print {
+    display: none;
+  }
+
+  .drive-status {
+    font-size: 13px;
+    padding: 6px;
+    border-radius: 6px;
+    border: 1px dashed #bbb;
+    background: #fff;
+    margin-left: 6px;
+  }
+
+  @media (max-width: 700px) {
+    .form-grid {
+      grid-template-columns: 1fr;
     }
-    #purchaseContainer thead th {font-weight:700; text-align:left}
-    #purchaseContainer td {text-align:left; vertical-align:top}
-    #purchaseContainer {margin:0 auto; width:95%}
-    .note-print{display:block;padding:2px 0;border:0}
-    textarea.note-input{display:none !important}
+
+    th, td {
+      font-size: 14px;
+      padding: 8px;
+    }
+  }
+
+  /* ===========================
+     Receipt-style print rules
+     =========================== */
+  @media print {
+    header, .controls, .topbar, .save-load-row, .no-print {
+      display: none !important;
+    }
+
+    body {
+      margin: 0;
+      padding: 4px;
+      font-size: 13.5px;
+    }
+
+    #purchaseContainer table {
+      width: 100%;
+      border-collapse: collapse;
+      border: none;
+    }
+
+    #purchaseContainer th, #purchaseContainer td {
+      border-top: 1px solid #000;
+      border-bottom: 1px solid #000;
+      border-left: none;
+      border-right: none;
+      padding: 4px 6px;
+      font-size: 13.5px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    #purchaseContainer thead th {
+      font-weight: 700;
+    }
+
+    #purchaseContainer {
+      margin: 0 auto;
+      width: 95%;
+    }
+
+    .note-print {
+      display: block;
+      padding: 2px 0;
+      border: 0;
+    }
+
+    textarea.note-input {
+      display: none !important;
+    }
   }
 </style>
+
 </head>
 <body>
 <header>
