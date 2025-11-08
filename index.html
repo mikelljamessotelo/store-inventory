@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Store Inventory — Version 3.2.5</title>
+<title>Store Inventory — Version 3.2.5 (Drive Enabled)</title>
 <style>
   :root{
     --bg:#f6f6f6;
@@ -43,7 +43,7 @@
   .notes-td textarea{width:100%;height:44px;border-radius:6px;border:1px solid #ccc;padding:6px}
   .purchase-top{display:flex;gap:8px;align-items:center;margin-bottom:8px;justify-content:space-between}
   .purchase-title{font-weight:700}
-  .drive-status{font-size:13px;padding:6px;border-radius:6px;border:1px dashed #bbb;background:var(--panel);margin-left:6px}
+  .drive-status{font-size:13px;padding:6px;border-radius:6px;border:1px dashed #bbb;background:var(--panel);margin-left:6px;min-width:160px;text-align:center}
   .no-print{display:block}
   .note-print{display:none}
   .touch-check{display:flex;align-items:center;justify-content:center;width:92px;height:40px}
@@ -55,7 +55,7 @@
   .negative{color:var(--danger)}
   .sell-bold{font-weight:700}
   /* small screens */
-  @media (max-width:700px){.form-grid{grid-template-columns:1fr}th,td{font-size:14px;padding:8px}}
+  @media (max-width:700px){.form-grid{grid-template-columns:1fr}th,td{font-size:14px;padding:8px} }
   /* print rules */
   @media print{
     header,.controls,.topbar,.no-print{display:none!important}
@@ -67,7 +67,6 @@
     .note-print{display:block;padding:2px 0;border:0}
     textarea.note-input{display:none!important}
   }
-
   /* dark mode */
   body.dark{--bg:#111;--panel:#1a1a1a;--txt:#eaeaea;--muted:#bdbdbd;--input-border:#333}
 </style>
@@ -90,7 +89,11 @@
     <button id="btnGoPurchase">🛒 Purchase List</button>
     <button id="btnDataTools">🧰 Data Tools</button>
     <button id="btnToggleDark">🌙</button>
-    <div class="drive-status" id="driveStatus">Drive: Ready</div>
+    <!-- Drive quick actions -->
+    <button id="btnDriveConnect" disabled>🔗 Connect to Drive</button>
+    <button id="btnDriveUpload" disabled>⬆️ Upload Backup</button>
+    <button id="btnDriveLoad" disabled>⬇️ Load Backup</button>
+    <div class="drive-status" id="driveStatus">Drive: Not connected</div>
   </div>
 </header>
 
@@ -193,7 +196,7 @@
       <div style="display:flex;gap:8px">
         <button id="btnCloseDataTools">Close</button>
       </div>
-      <div class="note">Backup downloads a JSON snapshot of products, categories, remarks, and saved purchase lists.</div>
+      <div class="note">Backup downloads a JSON snapshot of products, categories, remarks, and saved purchase lists. Drive: Connect to upload/download backups.</div>
     </div>
   </div>
 </div>
@@ -274,20 +277,23 @@
 
 <!-- Google API (optional, kept) -->
 <script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
 
 <script>
 (function(){
 /* -------------------------
-   Keys / constants
+   Keys / constants (PASTE your keys here)
    ------------------------- */
 const KEY = 'store_inventory_v3_2_5';
 const KEY_CATS = 'store_inventory_categories_v3_2_5';
 const KEY_REMARKS = 'store_inventory_remarks_v3_2_5';
 const KEY_SAVED_PURCHASES = 'store_inventory_saved_purchase_lists_v3_2_5';
-const APP_DRIVE_FILENAME = 'store_inventory_backup.csv';
-const APP_DRIVE_PURCHASE_FILENAME = 'store_inventory_purchase_lists.csv';
-const GOOGLE_API_KEY = ''; // optional: paste if you want Drive
-const GOOGLE_CLIENT_ID = '';
+const APP_DRIVE_FILENAME = 'mattmat_inventory_backup.json'; // file name used on Drive
+// Paste your API key and OAuth Client ID here:
+const GOOGLE_API_KEY = 'AIzaSyBQ9QgFBIkvxvHMV-3wUr7qXwitxwBp0Ro'; // <-- PUT YOUR API KEY
+const GOOGLE_CLIENT_ID = '96651524997-fu2eois3b9geiqdo2js2600hg1mj84p3.apps.googleusercontent.com'; // <-- PUT YOUR OAUTH CLIENT ID (xxx.apps.googleusercontent.com)
+const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
+const SCOPES = 'https://www.googleapis.com/auth/drive.file'; // scope limited to app-created files
 
 /* -------------------------
    Elements
@@ -310,6 +316,11 @@ const btnCategories = document.getElementById('btnCategories');
 const btnGoPurchase = document.getElementById('btnGoPurchase');
 const btnDataTools = document.getElementById('btnDataTools');
 const btnToggleDark = document.getElementById('btnToggleDark');
+
+const btnDriveConnect = document.getElementById('btnDriveConnect');
+const btnDriveUpload = document.getElementById('btnDriveUpload');
+const btnDriveLoad = document.getElementById('btnDriveLoad');
+const driveStatusEl = document.getElementById('driveStatus');
 
 const productView = document.getElementById('productView');
 const purchaseView = document.getElementById('purchaseView');
@@ -385,6 +396,11 @@ let selectedId = null;
 let loadedPurchaseListName = ''; // name shown at top of purchase
 let sortState = { key: null, asc: true };
 
+/* Drive auth state */
+let gapiInited = false;
+let gisInited = false;
+let tokenClient = null;
+
 /* -------------------------
    Helpers
    ------------------------- */
@@ -457,7 +473,7 @@ function refreshTable(){
     const tdBtn = document.createElement('td'); tdBtn.style.textAlign='center'; tdBtn.className='touch-check';
     const btn = document.createElement('button'); btn.textContent = it.checked ? '➖ Remove' : '➕ Add';
     btn.title = it.checked ? 'Remove from purchase list' : 'Add to purchase list';
-    btn.addEventListener('click', e => { e.stopPropagation(); it.checked = !it.checked; saveAll(); refreshTable(); });
+    btn.addEventListener('click', e => { e.stopPropagation(); it.checked = !it.checked; saveAll(); refreshTable(); renderPurchaseTable(); });
     tdBtn.appendChild(btn);
 
     const tdCost = document.createElement('td'); tdCost.className = 'center'; tdCost.textContent = (it.cost===undefined? '' : Number(it.cost).toFixed(2));
@@ -504,6 +520,8 @@ function init(){
   adjustTableHeight();
   refreshTable();
   updateDriveUI();
+  // initialize gapi + gis
+  maybeInitGapiAndGis();
 }
 window.addEventListener('load', init);
 window.addEventListener('resize', adjustTableHeight);
@@ -555,7 +573,7 @@ function bindEvents(){
   editSave.addEventListener('click', saveEditedCost);
   [editPacks, editPcsPerPack, editCostPerPack].forEach(el=>el.addEventListener('input', ()=>{ editCost.value = computeCost(editPacks.value, editPcsPerPack.value, editCostPerPack.value).toFixed(4); }));
 
-  btnUncheck.addEventListener('click', ()=>{ if(!confirm('Uncheck ALL items?')) return; products.forEach(p=>p.checked=false); saveAll(); refreshTable(); });
+  btnUncheck.addEventListener('click', ()=>{ if(!confirm('Uncheck ALL items?')) return; products.forEach(p=>p.checked=false); saveAll(); refreshTable(); renderPurchaseTable(); });
 
   btnImportLocal.addEventListener('click', ()=> fileInputLocal.click());
   fileInputLocal.addEventListener('change', handleFileImportLocal);
@@ -594,6 +612,10 @@ function bindEvents(){
   fileImportLegacy.addEventListener('change', handleLegacyImport);
 
   btnToggleDark.addEventListener('click', ()=>{ document.body.classList.toggle('dark'); adjustTableHeight(); });
+
+  btnDriveConnect.addEventListener('click', handleDriveConnect);
+  btnDriveUpload.addEventListener('click', handleDriveUpload);
+  btnDriveLoad.addEventListener('click', handleDriveLoad);
 
   document.addEventListener('keydown', (e)=>{ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === 'e'){ e.preventDefault(); exportCSVLocal(); } });
 }
@@ -1084,12 +1106,216 @@ function addRemark(name){ if(!name) return; if(!remarks.includes(name)){ remarks
    ------------------------- */
 
 /* -------------------------
-   Drive integration helpers (kept optional)
+   Drive integration helpers
    ------------------------- */
+
+/*
+  Plan:
+   - Initialize gapi.client with API key & discovery doc
+   - Use Identity Services token client for OAuth to obtain access_token
+   - Use fetch + Authorization Bearer token for upload/download multipart
+   - find existing backup by name (APP_DRIVE_FILENAME) then update or create
+*/
+
+function maybeInitGapiAndGis(){
+  // if keys missing, leave disabled and show note
+  if(!GOOGLE_API_KEY || !GOOGLE_CLIENT_ID){
+    driveStatusEl.textContent = 'Drive: Add API_KEY & CLIENT_ID';
+    btnDriveConnect.disabled = true;
+    btnDriveUpload.disabled = true;
+    btnDriveLoad.disabled = true;
+    return;
+  }
+  // load gapi client init
+  gapi.load('client', async () => {
+    try {
+      await gapi.client.init({
+        apiKey: GOOGLE_API_KEY,
+        discoveryDocs: DISCOVERY_DOCS
+      });
+      gapiInited = true;
+      updateDriveUI();
+    } catch(err){
+      console.error('gapi.client.init error', err);
+      driveStatusEl.textContent = 'Drive: gapi init error';
+    }
+  });
+
+  // init Identity Services token client
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: SCOPES,
+    callback: (resp) => {
+      if(resp.error){
+        console.error('Token client error', resp);
+        driveStatusEl.textContent = 'Drive: auth failed';
+        return;
+      }
+      // set token to gapi client for possible use by gapi
+      gapi.client.setToken({access_token: resp.access_token});
+      driveStatusEl.textContent = 'Drive: Connected';
+      btnDriveUpload.disabled = false;
+      btnDriveLoad.disabled = false;
+      btnDriveConnect.disabled = false;
+    }
+  });
+  gisInited = true;
+  updateDriveUI();
+}
+
 function updateDriveUI(){
-  // placeholder for when keys are provided
-  const disabled = !GOOGLE_API_KEY || !GOOGLE_CLIENT_ID;
-  // Drive buttons could be enabled/disabled here if present
+  if(!GOOGLE_API_KEY || !GOOGLE_CLIENT_ID){
+    driveStatusEl.textContent = 'Drive: Add API_KEY & CLIENT_ID';
+    btnDriveConnect.disabled = true;
+    btnDriveUpload.disabled = true;
+    btnDriveLoad.disabled = true;
+    return;
+  }
+  // enable Connect button if libs initialized
+  if(gapiInited && gisInited){
+    btnDriveConnect.disabled = false;
+    driveStatusEl.textContent = 'Drive: Ready (not connected)';
+  } else {
+    btnDriveConnect.disabled = true;
+    driveStatusEl.textContent = 'Drive: Initializing...';
+  }
+}
+
+/* Trigger auth / connect */
+function handleDriveConnect(){
+  if(!tokenClient) return alert('Drive not initialized. Make sure API key and Client ID are set.');
+  // request token interactively
+  tokenClient.requestAccessToken({prompt: 'consent'});
+}
+
+/* Find existing backup file by name */
+async function findDriveFileByName(name){
+  try {
+    const res = await gapi.client.drive.files.list({
+      q: `name = '${name.replace(/'/g,"\\'")}' and trashed = false and mimeType = 'application/json'`,
+      fields: 'files(id,name,modifiedTime)',
+      spaces: 'drive'
+    });
+    const files = res.result.files || [];
+    return files.length ? files[0] : null;
+  } catch(err){
+    console.error('findDriveFileByName error', err);
+    throw err;
+  }
+}
+
+/* Upload (create or update) backup JSON to Drive */
+async function handleDriveUpload(){
+  if(!gapi.client) return alert('Drive client not initialized.');
+  try {
+    driveStatusEl.textContent = 'Drive: Uploading...';
+    // ensure we have token
+    const tokenObj = gapi.client.getToken();
+    if(!tokenObj || !tokenObj.access_token){
+      // interactive if no token
+      return tokenClient.requestAccessToken({prompt: 'consent'});
+    }
+    const token = tokenObj.access_token;
+    const snapshot = exportDataForDrive();
+    const content = JSON.stringify(snapshot, null, 2);
+    const existing = await findDriveFileByName(APP_DRIVE_FILENAME);
+    if(existing){
+      // update via multipart PATCH
+      const metadata = { name: APP_DRIVE_FILENAME, mimeType: 'application/json' };
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+      form.append('file', new Blob([content], {type: 'application/json'}));
+      const resp = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${existing.id}?uploadType=multipart&fields=id,modifiedTime`, {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer ' + token },
+        body: form
+      });
+      if(!resp.ok) throw new Error('Upload failed: ' + resp.statusText);
+      const json = await resp.json();
+      driveStatusEl.textContent = 'Drive: Backup updated';
+      alert('Drive backup updated: ' + json.id);
+    } else {
+      // create
+      const metadata = { name: APP_DRIVE_FILENAME, mimeType: 'application/json' };
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+      form.append('file', new Blob([content], {type: 'application/json'}));
+      const resp = await fetch(`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,modifiedTime`, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token },
+        body: form
+      });
+      if(!resp.ok) throw new Error('Upload failed: ' + resp.statusText);
+      const json = await resp.json();
+      driveStatusEl.textContent = 'Drive: Backup created';
+      alert('Drive backup created: ' + json.id);
+    }
+  } catch(err){
+    console.error('handleDriveUpload error', err);
+    alert('Drive upload error: ' + (err.message || err));
+    driveStatusEl.textContent = 'Drive: Upload failed';
+  }
+}
+
+/* Load backup from Drive (find file, prompt to replace local data) */
+async function handleDriveLoad(){
+  if(!gapi.client) return alert('Drive client not initialized.');
+  try {
+    driveStatusEl.textContent = 'Drive: Searching...';
+    const tokenObj = gapi.client.getToken();
+    if(!tokenObj || !tokenObj.access_token){
+      return tokenClient.requestAccessToken({prompt: 'consent'});
+    }
+    const token = tokenObj.access_token;
+    const file = await findDriveFileByName(APP_DRIVE_FILENAME);
+    if(!file){
+      driveStatusEl.textContent = 'Drive: No backup found';
+      alert('No backup file found on Drive named: ' + APP_DRIVE_FILENAME);
+      return;
+    }
+    // fetch content
+    const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, {
+      method: 'GET',
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    if(!resp.ok) throw new Error('Download failed: ' + resp.statusText);
+    const text = await resp.text();
+    let obj;
+    try { obj = JSON.parse(text); } catch(e){ throw new Error('Downloaded file is not valid JSON'); }
+    if(!confirm(`This will overwrite your local data with backup from Drive (modified: ${file.modifiedTime}). Continue?`)) {
+      driveStatusEl.textContent = 'Drive: Load cancelled';
+      return;
+    }
+    // apply restore (similar to handleRestoreFile)
+    if(obj.products && obj.categories){
+      products = obj.products || [];
+      categories = obj.categories || [];
+      remarks = obj.remarks || [];
+      savedPurchaseLists = obj.savedPurchaseLists || [];
+      saveAll();
+      ensureDefaultRemarks();
+      renderCategoryOptions(); renderRemarksOptions(); renderCategoriesTable(); renderRemarksTable(); populateSavedLists(); refreshTable();
+      driveStatusEl.textContent = 'Drive: Backup loaded';
+      alert('Drive backup loaded successfully.');
+    } else {
+      throw new Error('Backup format invalid');
+    }
+  } catch(err){
+    console.error('handleDriveLoad error', err);
+    alert('Drive load error: ' + (err.message || err));
+    driveStatusEl.textContent = 'Drive: Load failed';
+  }
+}
+
+/* Produce a snapshot object for Drive */
+function exportDataForDrive(){
+  return {
+    exportedAt: Date.now(),
+    products: products,
+    categories: categories,
+    remarks: remarks,
+    savedPurchaseLists: savedPurchaseLists
+  };
 }
 
 /* -------------------------
@@ -1102,15 +1328,7 @@ function showView(which){
 }
 
 /* -------------------------
-   UI: Categories / Remarks import/export helpers (already implemented above)
-   ------------------------- */
-
-/* -------------------------
-   Purchase lists import/export already implemented above
-   ------------------------- */
-
-/* -------------------------
-   Restore initial defaults if fresh install
+   Prepare initial defaults if fresh install
    ------------------------- */
 (function prepare(){
   loadAll();
