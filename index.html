@@ -1479,7 +1479,11 @@ setTimeout(() => {
 <!-- End Drive Init Helper -->
 
 
+
+
+
 <script>
+// === DRIVE INITIALIZATION (Restored v3.2.7 Logic) ===
 const GOOGLE_API_KEY = 'AIzaSyBQ9QgFBIkvxvHMV-3wUr7qXwitxwBp0Ro';
 const GOOGLE_CLIENT_ID = '96651524997-fu2eois3b9geiqdo2js2600hg1mj84p3.apps.googleusercontent.com';
 const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
@@ -1494,7 +1498,7 @@ function maybeEnableDrive() {
   const status = document.getElementById("driveStatus");
   if (gapiInited && gisInited) {
     if (btn) btn.disabled = false;
-    if (status) status.textContent = "✅ Drive ready — not connected";
+    if (status) status.textContent = "Drive: Ready (not connected)";
     console.log("✅ Drive scripts ready — Connect button enabled.");
   }
 }
@@ -1504,32 +1508,25 @@ function gapiLoaded() {
 }
 
 async function initializeGapiClient() {
-  try {
-    await gapi.client.init({
-      apiKey: GOOGLE_API_KEY,
-      discoveryDocs: DISCOVERY_DOCS,
-    });
-    gapiInited = true;
-    maybeEnableDrive();
-  } catch (err) {
-    console.error("gapi init error", err);
-  }
+  await gapi.client.init({
+    apiKey: GOOGLE_API_KEY,
+    discoveryDocs: DISCOVERY_DOCS,
+  });
+  gapiInited = true;
+  maybeEnableDrive();
 }
 
 function gisLoaded() {
-  try {
-    tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: SCOPES,
-      callback: "",
-    });
-    gisInited = true;
-    maybeEnableDrive();
-  } catch (err) {
-    console.error("gis init error", err);
-  }
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: SCOPES,
+    callback: "",
+  });
+  gisInited = true;
+  maybeEnableDrive();
 }
 
+// Load both scripts explicitly and trigger init
 window.addEventListener("load", () => {
   const gapiScript = document.createElement("script");
   gapiScript.src = "https://apis.google.com/js/api.js";
