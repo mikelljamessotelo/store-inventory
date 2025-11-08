@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Mattmat’s Inventory — Simple v3.1.1 (Drive Enabled)</title>
+<title>Mattmat’s Inventory — Simple v3.2.0 (Drive Enabled)</title>
 <style>
   :root{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial;}
   body{margin:0;padding:14px;background:#f6f6f6;color:#111}
@@ -43,16 +43,36 @@
   }
   @media (max-width:700px){.form-grid{grid-template-columns:1fr}}
   .drive-status{font-size:13px;padding:6px;border-radius:6px;border:1px dashed #bbb;background:#fff;margin-left:6px}
+
+  /* Receipt-style print rules (compact, horizontal borders only) */
+  @media print {
+    header, .controls, .topbar, .save-load-row, .no-print {display:none !important}
+    body {margin:0; padding:4px; font-size:12px}
+    #purchaseContainer table {width:100%; border-collapse:collapse; border:none}
+    #purchaseContainer th, #purchaseContainer td {
+      border-top:1px solid #000;
+      border-bottom:1px solid #000;
+      border-left:none; border-right:none;
+      padding:4px 6px;
+      font-size:12px;
+    }
+    #purchaseContainer thead th {font-weight:700; text-align:left}
+    #purchaseContainer td {text-align:left; vertical-align:top}
+    #purchaseContainer {margin:0 auto; width:95%}
+    .note-print{display:block;padding:2px 0;border:0}
+    textarea.note-input{display:none !important}
+  }
 </style>
 </head>
 <body>
 <header>
   <div>
-    <h1>Mattmat’s Inventory — Simple v3.1.1 (Drive Enabled)</h1>
+    <h1>Mattmat’s Inventory — Simple v3.2.0 (Drive Enabled)</h1>
     <div class="note">Single-file — offline. Data saved to localStorage. Optional Google Drive sync.</div>
   </div>
   <div class="controls">
     <button id="btnAdd">➕ Add Item</button>
+    <button id="btnDelete" disabled>🗑️ Delete Item</button>
     <button id="btnEditItem" disabled>✏️ Edit Item</button>
     <button id="btnEditCost" disabled>💰 Edit Cost</button>
     <button id="btnUncheck">🧹 Uncheck All</button>
@@ -192,32 +212,28 @@
 
 <!-- Load Google client library first (gapi) -->
 <script src="https://apis.google.com/js/api.js"></script>
-<!-- GIS script loaded dynamically by the app -->
 
 <script>
 /*
-  IMPORTANT: You MUST paste your own keys here. I CANNOT provide them.
-  - Create credentials in Google Cloud Console:
-    1. Enable Google Drive API
-    2. Create an OAuth 2.0 Client ID (Web application) and add your origin (e.g. http://localhost)
-    3. Create an API Key and restrict it to your origin and Drive API
-  - Paste them below:
+  NOTE: These are the keys you previously included in your working file.
+  If you want to replace them, change the values below.
 */
 const GOOGLE_API_KEY = 'AIzaSyBQ9QgFBIkvxvHMV-3wUr7qXwitxwBp0Ro';
 const GOOGLE_CLIENT_ID = '96651524997-fu2eois3b9geiqdo2js2600hg1mj84p3.apps.googleusercontent.com';
 const APP_DRIVE_FILENAME = 'mattmat_inventory_backup.csv';
 
-// -- App code (single-file inventory with Drive integration) --
+// Full app (merged v3.1.1 Drive + v3.2.0 features)
 (function(){
   // Storage keys
-  const KEY = 'mattmat_products_v3_1';
-  const KEY_CATS = 'mattmat_categories_v3_1';
-  const KEY_SAVED_PURCHASES = 'mattmat_saved_purchase_lists_v3_1';
+  const KEY = 'mattmat_products_v3_2';
+  const KEY_CATS = 'mattmat_categories_v3_2';
+  const KEY_SAVED_PURCHASES = 'mattmat_saved_purchase_lists_v3_2';
 
   // Elements
   const productTableBody = document.querySelector('#productTable tbody');
   const searchInput = document.getElementById('search');
   const btnAdd = document.getElementById('btnAdd');
+  const btnDelete = document.getElementById('btnDelete');
   const btnEditItem = document.getElementById('btnEditItem');
   const btnEditCost = document.getElementById('btnEditCost');
   const btnUncheck = document.getElementById('btnUncheck');
@@ -320,7 +336,7 @@ const APP_DRIVE_FILENAME = 'mattmat_inventory_backup.csv';
 
       tr.appendChild(tdCat); tr.appendChild(tdBarcode); tr.appendChild(tdName); tr.appendChild(chkCell); tr.appendChild(tdCost); tr.appendChild(tdSell); tr.appendChild(tdSuggested); tr.appendChild(tdMarkup);
 
-      tr.addEventListener('click', (e)=>{ if(e.target.tagName.toLowerCase() === 'input') return; selectedId = it.id; btnEditCost.disabled=false; btnEditItem.disabled=false; refreshTable(); });
+      tr.addEventListener('click', (e)=>{ if(e.target.tagName.toLowerCase() === 'input') return; selectedId = it.id; btnEditCost.disabled=false; btnEditItem.disabled=false; btnDelete.disabled=false; refreshTable(); });
       productTableBody.appendChild(tr);
     });
   }
@@ -548,7 +564,7 @@ const APP_DRIVE_FILENAME = 'mattmat_inventory_backup.csv';
 
   function requestAccessToken(){ return new Promise((resolve,reject)=>{ if(!tokenClient) return reject(new Error('Token client not initialized')); tokenClient.requestAccessToken({ prompt: 'consent' , callback: (resp)=>{ if(resp.error) return reject(resp); accessToken = resp.access_token; if(gapiInited) gapi.client.setToken({access_token: accessToken}); driveStatus.textContent = 'Drive: Signed in'; resolve(resp); } }); }); }
 
-  // Init helper that waits for google scripts to be present
+  // Init helper that waits for google scripts to be present (robust)
   function loadIdentityScriptAndStart(){
     if(typeof google !== 'undefined' && typeof gapi !== 'undefined'){
       // both exist, start app
@@ -565,48 +581,37 @@ const APP_DRIVE_FILENAME = 'mattmat_inventory_backup.csv';
     const poll = setInterval(()=>{ if(typeof google !== 'undefined' && typeof gapi !== 'undefined'){ clearInterval(poll); init(); } }, 200);
   }
 
-// Start after window load
-window.addEventListener('load', ()=>{
-  updateDriveUI();
-
-  // Load both Google scripts safely before init()
-  function loadGoogleScripts() {
-    return new Promise((resolve) => {
-      let readyCount = 0;
-      function checkReady() {
-        if (typeof gapi !== 'undefined' && typeof google !== 'undefined') {
-          resolve();
-        } else if (readyCount++ < 40) {
-          setTimeout(checkReady, 250);
-        } else {
-          alert('⚠️ Google libraries failed to load. Check your internet connection.');
+  // Start after window load (ensure gapi + GIS are ready)
+  window.addEventListener('load', ()=>{
+    updateDriveUI();
+    // Load both scripts if missing then start
+    function loadGoogleScripts() {
+      return new Promise((resolve) => {
+        let attempts = 0;
+        function checkReady() {
+          if (typeof gapi !== 'undefined' && typeof google !== 'undefined') {
+            resolve();
+          } else if (++attempts < 50) {
+            setTimeout(checkReady, 200);
+          } else {
+            alert('Google libraries failed to load. Check network or origin.');
+          }
         }
-      }
-
-      // load api.js if not already
-      if (!document.querySelector('script[src*="apis.google.com/js/api.js"]')) {
-        const gapiScript = document.createElement('script');
-        gapiScript.src = 'https://apis.google.com/js/api.js';
-        document.head.appendChild(gapiScript);
-      }
-
-      // load identity client if not already
-      if (!document.querySelector('script[src*="accounts.google.com/gsi/client"]')) {
-        const gisScript = document.createElement('script');
-        gisScript.src = 'https://accounts.google.com/gsi/client';
-        document.head.appendChild(gisScript);
-      }
-
-      checkReady();
-    });
-  }
-
-  loadGoogleScripts().then(() => {
-    console.log('✅ Google libraries ready');
-    init(); // now safe to call init() — both gapi and google.accounts exist
+        if (!document.querySelector('script[src*="apis.google.com/js/api.js"]')) {
+          const gapiScript = document.createElement('script');
+          gapiScript.src = 'https://apis.google.com/js/api.js';
+          document.head.appendChild(gapiScript);
+        }
+        if (!document.querySelector('script[src*="accounts.google.com/gsi/client"]')) {
+          const gisScript = document.createElement('script');
+          gisScript.src = 'https://accounts.google.com/gsi/client';
+          document.head.appendChild(gisScript);
+        }
+        checkReady();
+      });
+    }
+    loadGoogleScripts().then(()=>{ console.log('Google libs ready'); init(); });
   });
-});
-
 
   // Expose some functions for debugging
   window._mattmat = { products, categories, exportToDrive, importFromDrive };
