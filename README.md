@@ -1,7 +1,6 @@
-# 🧾 Mattmat’s Inventory — Simple (Drive Enabled)
+# 🧾 Store Inventory — Version 3.2.5
 
-**Version:** v3.2.4  
-**Status:** Stable Build  
+**Status:** Major Update (Unified Feature Release)  
 **Type:** Offline Inventory Management System  
 **Author:** James
 
@@ -9,40 +8,45 @@
 
 ## 📘 About This Project
 
-**Mattmat’s Inventory — Simple** is a **complete offline-first inventory system** built using **HTML, CSS, and vanilla JavaScript**.  
-It runs entirely in your browser — **no installation, no server, no database** — and can optionally **sync with Google Drive** for backup.
+**Store Inventory — Version 3.2.5** is a single-file, **offline-first inventory system** built entirely with **HTML, CSS, and JavaScript**.  
+It’s lightweight, runs directly in your browser, and saves data using `localStorage` — no installation, database, or internet required.
 
-This system is designed for **small businesses, sari-sari stores, and personal use**, offering a clean and practical way to track stock, costs, and purchases.
+This version unifies all major improvements from previous builds for better usability, visibility, and control.
 
 ---
 
 ## 💡 Key Features
 
-- 📦 **Item Management**
-  - Add, edit, or delete products with barcode, category, and remarks.
-  - Remarks include ready-to-use tags: *New, Fast Moving, Discontinued*.
-  - Auto-calculates cost, markup, and suggested sell price.
+### 🖥️ Interface & Display
+- Sticky (fixed) product table headers  
+- Table height automatically adjusts to screen size  
+- Dark mode toggle 🌙  
+- Wider **green Save button** for visibility  
+- Centered columns for **Cost**, **Sell Price**, and **Suggested Sell Price**  
+- Negative numbers shown in **red font**  
+- **Sell Price** always displayed in **bold font**  
 
-- ☁️ **Google Drive Sync**
-  - Import or export inventory backups from your Google Drive.
-  - Automatically updates existing Drive files instead of creating duplicates.
+### 💰 Data & Display Behavior
+- If Sell Price is `0`, display it as **blank** instead of `0.00`  
+- Dropdown filters for **Category** and **Remarks**  
+- Combined text + dropdown search functionality  
 
-- 📂 **CSV Import & Export**
-  - Supports upsert logic — updates existing items by **barcode or name**, adds new ones if missing.
-  - Includes all data fields (category, barcode, name, remarks, etc.).
+### 🧾 Purchase List Enhancements
+- Displays the **loaded purchase list filename** at the top (bold)  
+- Ability to **Unload/Clear** the current list  
+- Auto PDF filename format: **“Purchase List - [Date and Time]”**  
+- Automatically saves the purchase list on print  
 
-- 🏷️ **Category & Remarks Manager**
-  - Manage both categories and remarks in a unified view.
-  - Import or export each as separate CSV tables.
+### 🧰 Data Tools
+- Manual **Backup / Restore** (via JSON file)  
+- **Reset all data** with confirmation  
+- **Safe import from older versions**  
+- Optional **CSV backup archive**  
 
-- 🛒 **Purchase List**
-  - Mark items to include in your purchase list.
-  - Auto-saves each printed list with the date and time as its name.
-  - Lists are importable/exportable as CSV.
-
-- 💾 **Offline-Ready**
-  - Fully functional without an internet connection — powered by `localStorage`.
-  - Data persists even after closing your browser.
+### ☁️ Import / Export
+- Import and Export data as CSV files  
+- Upsert logic: updates existing items (by barcode or name) or adds new ones  
+- Includes all item details — category, remarks, notes, etc.  
 
 ---
 
@@ -52,73 +56,60 @@ This system is designed for **small businesses, sari-sari stores, and personal u
 |----------|-------------|
 | Frontend | HTML5, CSS3, Vanilla JavaScript |
 | Storage | Browser localStorage |
-| Cloud Sync | Google Drive API (optional) |
-| File Handling | CSV import/export |
-| Print Layout | Receipt-style, optimized for A4/thermal print |
+| Optional Sync | Google Drive API (optional, hidden integration) |
+| File Handling | CSV import/export, JSON backup |
+| Print Layout | Receipt-style, timestamped, PDF-ready |
 
 ---
 
 ## 🧱 Project Structure
 
 ```
-mattmat_inventory_v3_2_4.html
+store_inventory_v3_2_5.html
 ├── Dashboard / Product Table
-├── Add/Edit Item Modal (with Delete)
+├── Add/Edit/Delete Item Modal
 ├── Categories & Remarks Management
 ├── Purchase List (Auto-save + Print)
-└── LocalStorage + Drive Sync Engine
+├── Data Tools (Backup / Restore / Reset)
+└── LocalStorage + CSV Logic
 ```
 
 ---
 
-## 🖨️ Print Sample
+## 🖨️ Printing
 
-Each purchase list prints in a **clean, receipt-like format**, showing:
-- Category
-- Product Name
-- Cost per Pack
-- Remarks (if any)
-- Additional Notes (editable before print)
-
----
-
-## 🔐 Data Behavior
-
-| Action | Behavior |
-|---------|-----------|
-| Import CSV | Updates existing items by barcode or name; adds new ones |
-| Export CSV | Includes all products with remarks and notes |
-| Print Purchase List | Auto-saves list with timestamp |
-| Delete Item | Removes the product permanently from localStorage |
+When printing the purchase list:
+- The filename automatically becomes **“Purchase List - [Date and Time]”**
+- Each item’s **Remarks** appear in the Notes section if available
+- Clean, receipt-style layout ideal for A4 or thermal printing
 
 ---
 
 ## 🚀 How to Use
 
-1. **Download** the latest HTML file (`index.html`).
-2. **Open it in your browser** (Chrome recommended).
-3. Add products, edit costs, and create purchase lists.
-4. Optionally connect your Google Drive for cloud backup.
-5. Export or print when needed — your data remains saved offline.
+1. **Download** `store_inventory_v3_2_5.html`
+2. **Open** it in your browser (Chrome recommended)
+3. Add or edit products — all data is saved locally
+4. Create purchase lists and print receipts instantly
+5. Optionally import/export data via CSV or JSON backups
+
+---
+
+## 🧮 Tips & Notes
+- Use **Backup** in Data Tools regularly to save your inventory snapshot.
+- Enable **Dark Mode** for night viewing.  
+- Use **Category** and **Remarks** filters for faster product lookup.  
+- Negative prices highlight in red for easy tracking.
 
 ---
 
 ## 📜 License
 
-This project is **free to use and modify** for personal or small business purposes.  
+Free to use and modify for personal or small business purposes.  
 Attribution is appreciated but not required.
 
 ---
 
 ## ❤️ Credits
 
-Developed by **James**, for small stores that need reliable, offline-ready tools.
-
----
-
-### 🪄 Tip
-
-For best performance:
-- Keep your browser updated.
-- Export your data regularly as a CSV backup.
-- Enable Drive sync if you want cloud copies.
+Developed by **James** — for small stores and local entrepreneurs who need a simple, reliable, and fully offline inventory system.
