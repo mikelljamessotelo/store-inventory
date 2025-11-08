@@ -59,16 +59,50 @@
   /* print rules */
   @media print{
     header,.controls,.topbar,.no-print{display:none!important}
-    body{margin:0;padding:4px;font-size:13.5px}
-    #purchaseContainer table{width:100%;border-collapse:collapse;border:none}
-    #purchaseContainer th,#purchaseContainer td{border-top:1px solid #000;border-bottom:1px solid #000;border-left:none;border-right:none;padding:4px 6px;font-size:13.5px;text-align:left;vertical-align:top}
-    #purchaseContainer thead th{font-weight:700}
-    #purchaseContainer{margin:0 auto;width:95%}
+    body{margin:0;padding:4px;font-size:13.5px;background:#fff !important;color:#000 !important; font-family: "Courier New", Courier, monospace !important;}
+    #purchaseContainer{margin:0 auto; width:95%; background: #fff !important;}
+    #purchaseContainer table{width:100%; border-collapse:collapse; border:none; background:transparent}
+    #purchaseContainer th,#purchaseContainer td{
+      border: none !important;
+      padding: 2px 0 !important;
+      font-size:13.5px;
+      text-align:left;
+      vertical-align:top;
+    }
+    #purchaseContainer thead th{font-weight:700; padding-bottom:6px}
     .note-print{display:block;padding:2px 0;border:0}
     textarea.note-input{display:none!important}
+    /* reduce margins on printed page */
+    @page { margin: 8mm 6mm; }
   }
   /* dark mode */
   body.dark{--bg:#111;--panel:#1a1a1a;--txt:#eaeaea;--muted:#bdbdbd;--input-border:#333}
+  /* Add/Remove buttons */
+  .btn-add {
+    background: #2e7d32;
+    color: #fff;
+    border: 1px solid #1b5e20;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .btn-remove {
+    background: #d32f2f;
+    color: #fff;
+    border: 1px solid #b71c1c;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  body.dark .btn-add, body.dark .btn-remove {
+    box-shadow: 0 1px 0 rgba(0,0,0,0.15) inset;
+  }
+  /* Ensure selected row text is readable in both light/dark modes */
+  tr.selected, tr.selected td {
+    background: #fff8d6 !important;
+    color: #000 !important;
+  }
+  tr.selected .btn-add, tr.selected .btn-remove { color: #fff !important; } /* keep buttons readable */
 </style>
 </head>
 <body>
@@ -82,24 +116,16 @@
     <button id="btnEditItem" disabled>✏️ Edit Item</button>
     <button id="btnEditCost" disabled>💰 Edit Cost</button>
     <button id="btnDelete" disabled>🗑️ Delete Item</button>
-    <button id="btnUncheck">🧹 Uncheck All</button>
-    <button id="btnImportLocal">📂 Import CSV</button>
-    <button id="btnExportLocal">💾 Export CSV</button>
-    <button id="btnCategories">📂 Categories / Remarks</button>
     <button id="btnGoPurchase">🛒 Purchase List</button>
     <button id="btnDataTools">🧰 Data Tools</button>
     <button id="btnToggleDark">🌙</button>
-    <!-- Drive quick actions -->
-    <button id="btnDriveConnect" disabled>🔗 Connect to Drive</button>
-    <button id="btnDriveUpload" disabled>⬆️ Upload Backup</button>
-    <button id="btnDriveLoad" disabled>⬇️ Load Backup</button>
     <div class="drive-status" id="driveStatus">Drive: Not connected</div>
   </div>
 </header>
 
 <section id="productView" class="view active">
   <div class="topbar">
-    <div class="search" style="flex:1;gap:8px">
+    <div class="search" style="flex:1;gap:8px;align-items:center">
       <input id="search" type="text" placeholder="Search by Item Name or Barcode..." />
       <select id="filterCategory" style="width:180px">
         <option value="">— All Categories —</option>
@@ -107,6 +133,8 @@
       <select id="filterRemarks" style="width:180px">
         <option value="">— All Remarks —</option>
       </select>
+      <button id="btnResetFilters">Reset</button>
+      <button id="btnUncheck">🧹 Uncheck All</button>
     </div>
     <label style="width:110px">Rows: <input id="rowsPerPage" type="number" value="9999" min="1" style="width:60px"></label>
   </div>
@@ -188,11 +216,25 @@
         <button id="btnRestoreLocal">⬆️ Restore from file</button>
         <input id="fileRestore" type="file" accept=".json,.csv" style="display:none">
       </div>
+
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+        <button id="btnImportLocal">📂 Import CSV</button>
+        <button id="btnExportLocal">💾 Export CSV</button>
+        <button id="btnCategories">📂 Categories / Remarks</button>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+        <button id="btnDriveConnect" disabled>🔗 Connect to Drive</button>
+        <button id="btnDriveUpload" disabled>⬆️ Upload Backup (All)</button>
+        <button id="btnDriveLoad" disabled>⬇️ Load Backup (All)</button>
+      </div>
+
       <div style="display:flex;gap:8px">
         <button id="btnResetAll" class="btn-danger">⚠️ Reset all data</button>
         <button id="btnImportLegacy">⬆️ Import from older version (CSV)</button>
         <input id="fileImportLegacy" type="file" accept=".csv" style="display:none">
       </div>
+
       <div style="display:flex;gap:8px">
         <button id="btnCloseDataTools">Close</button>
       </div>
@@ -289,11 +331,16 @@ const KEY_CATS = 'store_inventory_categories_v3_2_5';
 const KEY_REMARKS = 'store_inventory_remarks_v3_2_5';
 const KEY_SAVED_PURCHASES = 'store_inventory_saved_purchase_lists_v3_2_5';
 const APP_DRIVE_FILENAME = 'mattmat_inventory_backup.json'; // file name used on Drive
-// Paste your API key and OAuth Client ID here:
+const DRIVE_PRODUCTS_CSV = 'mattmat_inventory_products.csv';
+const DRIVE_CATEGORIES_CSV = 'mattmat_inventory_categories.csv';
+const DRIVE_REMARKS_CSV = 'mattmat_inventory_remarks.csv';
+const DRIVE_PURCHASES_CSV = 'mattmat_inventory_purchase_lists.csv';
+
+// Paste your API key and OAuth Client ID here (keep same keys you used before):
 const GOOGLE_API_KEY = 'AIzaSyBQ9QgFBIkvxvHMV-3wUr7qXwitxwBp0Ro'; // <-- PUT YOUR API KEY
 const GOOGLE_CLIENT_ID = '96651524997-fu2eois3b9geiqdo2js2600hg1mj84p3.apps.googleusercontent.com'; // <-- PUT YOUR OAUTH CLIENT ID (xxx.apps.googleusercontent.com)
 const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
-const SCOPES = 'https://www.googleapis.com/auth/drive.file'; // scope limited to app-created files
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
 /* -------------------------
    Elements
@@ -385,6 +432,8 @@ const fileInputCats = document.getElementById('fileInputCats');
 const fileInputRemarks = document.getElementById('fileInputRemarks');
 const fileInputPurchase = document.getElementById('fileInputPurchase');
 
+const btnResetFilters = document.getElementById('btnResetFilters');
+
 /* -------------------------
    State
    ------------------------- */
@@ -417,6 +466,7 @@ function escapeHtml(s){ return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
    UI Rendering
    ------------------------- */
 function renderCategoryOptions(selected){
+  const prevCat = filterCategory.value;
   filterCategory.innerHTML = '<option value="">— All Categories —</option>';
   itemCategory.innerHTML = '';
   const optNew = document.createElement('option'); optNew.value='__add_new__'; optNew.textContent='➕ Add New Category'; itemCategory.appendChild(optNew);
@@ -427,9 +477,14 @@ function renderCategoryOptions(selected){
   if(selected) itemCategory.value = selected;
   else if(categories.length) itemCategory.selectedIndex = 1;
   else itemCategory.selectedIndex = 0;
+  // keep current filter selection if possible
+  if(prevCat && Array.from(filterCategory.options).some(o => o.value === prevCat)){
+    filterCategory.value = prevCat;
+  }
 }
 
 function renderRemarksOptions(selected){
+  const prevRemarks = filterRemarks.value;
   filterRemarks.innerHTML = '<option value="">— All Remarks —</option>';
   itemRemarks.innerHTML = '';
   const optNew = document.createElement('option'); optNew.value='__add_new__'; optNew.textContent='➕ Add New Remark'; itemRemarks.appendChild(optNew);
@@ -441,6 +496,10 @@ function renderRemarksOptions(selected){
   else if(remarks.includes('New')) itemRemarks.value = 'New';
   else if(remarks.length) itemRemarks.selectedIndex = 1;
   else itemRemarks.selectedIndex = 0;
+  // keep current filter selection if possible
+  if(prevRemarks && Array.from(filterRemarks.options).some(o => o.value === prevRemarks)){
+    filterRemarks.value = prevRemarks;
+  }
 }
 
 function ensureDefaultRemarks(){
@@ -471,8 +530,10 @@ function refreshTable(){
     const tdBarcode = document.createElement('td'); tdBarcode.textContent = it.barcode || '';
     const tdName = document.createElement('td'); tdName.textContent = it.name || '';
     const tdBtn = document.createElement('td'); tdBtn.style.textAlign='center'; tdBtn.className='touch-check';
-    const btn = document.createElement('button'); btn.textContent = it.checked ? '➖ Remove' : '➕ Add';
+    const btn = document.createElement('button');
+    btn.textContent = it.checked ? '➖ Remove' : '➕ Add';
     btn.title = it.checked ? 'Remove from purchase list' : 'Add to purchase list';
+    btn.className = it.checked ? 'btn-remove' : 'btn-add';
     btn.addEventListener('click', e => { e.stopPropagation(); it.checked = !it.checked; saveAll(); refreshTable(); renderPurchaseTable(); });
     tdBtn.appendChild(btn);
 
@@ -530,10 +591,9 @@ window.addEventListener('resize', adjustTableHeight);
    UI helpers & events
    ------------------------- */
 function adjustTableHeight(){
-  // leave some room for header and controls: header ~120px, topbar ~60px -> compute
   const headerHeight = document.querySelector('header').offsetHeight || 120;
   const topbars = document.querySelector('.topbar').offsetHeight || 60;
-  const reserved = headerHeight + topbars + 140; // safety
+  const reserved = headerHeight + topbars + 140;
   const h = Math.max(300, window.innerHeight - reserved);
   tableWrap.style.maxHeight = h + 'px';
 }
@@ -549,6 +609,16 @@ function bindEvents(){
   });
 
   searchInput.addEventListener('input', ()=>refreshTable());
+  // Enter key behavior: do search and select contents so it's ready for quick new scan/type
+  searchInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      refreshTable();
+      // select the content for quick overwrite (barcode scanner convenience)
+      setTimeout(()=>{ searchInput.select(); }, 50);
+    }
+  });
+
   filterCategory.addEventListener('change', ()=>refreshTable());
   filterRemarks.addEventListener('change', ()=>refreshTable());
   rowsPerPage.addEventListener('change', ()=>refreshTable());
@@ -572,6 +642,13 @@ function bindEvents(){
   editCancel.addEventListener('click', ()=>closeModal(modalEditCost));
   editSave.addEventListener('click', saveEditedCost);
   [editPacks, editPcsPerPack, editCostPerPack].forEach(el=>el.addEventListener('input', ()=>{ editCost.value = computeCost(editPacks.value, editPcsPerPack.value, editCostPerPack.value).toFixed(4); }));
+
+  btnResetFilters.addEventListener('click', ()=>{
+    searchInput.value = '';
+    filterCategory.value = '';
+    filterRemarks.value = '';
+    refreshTable();
+  });
 
   btnUncheck.addEventListener('click', ()=>{ if(!confirm('Uncheck ALL items?')) return; products.forEach(p=>p.checked=false); saveAll(); refreshTable(); renderPurchaseTable(); });
 
@@ -599,8 +676,7 @@ function bindEvents(){
   btnExportPurchase.addEventListener('click', exportPurchaseListsCSV);
   btnImportPurchase.addEventListener('click', ()=> fileInputPurchase.click());
   fileInputPurchase.addEventListener('change', handlePurchaseListsImport);
-  btnUnloadPurchase.addEventListener('click', ()=>{ if(!loadedPurchaseListName) { alert('No purchase list loaded.'); return; } if(!confirm('Unload/clear the currently loaded purchase list?')) return; // clear all checked
-    products.forEach(p => p.checked = false); loadedPurchaseListName = ''; saveAll(); refreshTable(); renderPurchaseTable(); alert('Purchase list unloaded.'); });
+  btnUnloadPurchase.addEventListener('click', ()=>{ if(!loadedPurchaseListName) { alert('No purchase list loaded.'); return; } if(!confirm('Unload/clear the currently loaded purchase list?')) return; products.forEach(p => p.checked = false); loadedPurchaseListName = ''; saveAll(); refreshTable(); renderPurchaseTable(); alert('Purchase list unloaded.'); });
 
   btnDataTools.addEventListener('click', ()=> showModal(modalDataTools));
   btnCloseDataTools.addEventListener('click', ()=> closeModal(modalDataTools));
@@ -614,9 +690,8 @@ function bindEvents(){
   btnToggleDark.addEventListener('click', ()=>{ document.body.classList.toggle('dark'); adjustTableHeight(); });
 
   btnDriveConnect.addEventListener('click', handleDriveConnect);
-  btnDriveUpload.addEventListener('click', handleDriveUpload);
-  btnDriveLoad.addEventListener('click', handleDriveLoad);
-
+  btnDriveUpload.addEventListener('click', handleDriveExportAll); // upload all to Drive
+  btnDriveLoad.addEventListener('click', handleDriveImportAll);   // load all from Drive
   document.addEventListener('keydown', (e)=>{ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === 'e'){ e.preventDefault(); exportCSVLocal(); } });
 }
 
@@ -936,7 +1011,6 @@ function renderPurchaseTable(){
   purchaseContainer.innerHTML = '';
   const checked = products.filter(p=>p.checked);
   if(checked.length === 0){ purchaseContainer.innerHTML = '<div class="note">No items selected for purchase.</div>'; return; }
-  // header area with loaded filename
   const top = document.createElement('div');
   top.style.marginBottom = '8px';
   if(loadedPurchaseListName){
@@ -1053,6 +1127,16 @@ function autoSaveAndPrint(){
   // set doc title to desired filename - many browsers use it as default file name when saving PDF
   const oldTitle = document.title;
   if(savedName) document.title = savedName;
+
+  // Attempt a Drive backup export if user is connected (non-blocking)
+  try {
+    const tokenObj = (gapi && gapi.client && gapi.client.getToken) ? gapi.client.getToken() : null;
+    if(tokenObj && tokenObj.access_token){
+      // call export all but don't block printing on result
+      handleDriveExportAll().catch(()=>{/* ignore errors for printing */});
+    }
+  } catch(e){ /* ignore */ }
+
   setTimeout(()=>{ window.print(); document.title = oldTitle; }, 250);
 }
 
@@ -1102,23 +1186,9 @@ function addCategory(name){ if(!name) return; if(!categories.includes(name)){ ca
 function addRemark(name){ if(!name) return; if(!remarks.includes(name)){ remarks.push(name); saveAll(); renderRemarksOptions(name); renderRemarksTable(); } }
 
 /* -------------------------
-   Saved lists load / populate
-   ------------------------- */
-
-/* -------------------------
    Drive integration helpers
    ------------------------- */
-
-/*
-  Plan:
-   - Initialize gapi.client with API key & discovery doc
-   - Use Identity Services token client for OAuth to obtain access_token
-   - Use fetch + Authorization Bearer token for upload/download multipart
-   - find existing backup by name (APP_DRIVE_FILENAME) then update or create
-*/
-
 function maybeInitGapiAndGis(){
-  // if keys missing, leave disabled and show note
   if(!GOOGLE_API_KEY || !GOOGLE_CLIENT_ID){
     driveStatusEl.textContent = 'Drive: Add API_KEY & CLIENT_ID';
     btnDriveConnect.disabled = true;
@@ -1126,7 +1196,6 @@ function maybeInitGapiAndGis(){
     btnDriveLoad.disabled = true;
     return;
   }
-  // load gapi client init
   gapi.load('client', async () => {
     try {
       await gapi.client.init({
@@ -1141,7 +1210,6 @@ function maybeInitGapiAndGis(){
     }
   });
 
-  // init Identity Services token client
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
     scope: SCOPES,
@@ -1151,7 +1219,6 @@ function maybeInitGapiAndGis(){
         driveStatusEl.textContent = 'Drive: auth failed';
         return;
       }
-      // set token to gapi client for possible use by gapi
       gapi.client.setToken({access_token: resp.access_token});
       driveStatusEl.textContent = 'Drive: Connected';
       btnDriveUpload.disabled = false;
@@ -1171,7 +1238,6 @@ function updateDriveUI(){
     btnDriveLoad.disabled = true;
     return;
   }
-  // enable Connect button if libs initialized
   if(gapiInited && gisInited){
     btnDriveConnect.disabled = false;
     driveStatusEl.textContent = 'Drive: Ready (not connected)';
@@ -1181,18 +1247,17 @@ function updateDriveUI(){
   }
 }
 
-/* Trigger auth / connect */
 function handleDriveConnect(){
   if(!tokenClient) return alert('Drive not initialized. Make sure API key and Client ID are set.');
-  // request token interactively
   tokenClient.requestAccessToken({prompt: 'consent'});
 }
 
-/* Find existing backup file by name */
-async function findDriveFileByName(name){
+async function findDriveFileByName(name, mimeType = null){
   try {
+    let q = `name = '${name.replace(/'/g,"\\'")}' and trashed = false`;
+    if(mimeType) q += ` and mimeType = '${mimeType}'`;
     const res = await gapi.client.drive.files.list({
-      q: `name = '${name.replace(/'/g,"\\'")}' and trashed = false and mimeType = 'application/json'`,
+      q,
       fields: 'files(id,name,modifiedTime)',
       spaces: 'drive'
     });
@@ -1204,110 +1269,53 @@ async function findDriveFileByName(name){
   }
 }
 
-/* Upload (create or update) backup JSON to Drive */
-async function handleDriveUpload(){
-  if(!gapi.client) return alert('Drive client not initialized.');
-  try {
-    driveStatusEl.textContent = 'Drive: Uploading...';
-    // ensure we have token
-    const tokenObj = gapi.client.getToken();
-    if(!tokenObj || !tokenObj.access_token){
-      // interactive if no token
-      return tokenClient.requestAccessToken({prompt: 'consent'});
-    }
-    const token = tokenObj.access_token;
-    const snapshot = exportDataForDrive();
-    const content = JSON.stringify(snapshot, null, 2);
-    const existing = await findDriveFileByName(APP_DRIVE_FILENAME);
-    if(existing){
-      // update via multipart PATCH
-      const metadata = { name: APP_DRIVE_FILENAME, mimeType: 'application/json' };
-      const form = new FormData();
-      form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
-      form.append('file', new Blob([content], {type: 'application/json'}));
-      const resp = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${existing.id}?uploadType=multipart&fields=id,modifiedTime`, {
-        method: 'PATCH',
-        headers: { Authorization: 'Bearer ' + token },
-        body: form
-      });
-      if(!resp.ok) throw new Error('Upload failed: ' + resp.statusText);
-      const json = await resp.json();
-      driveStatusEl.textContent = 'Drive: Backup updated';
-      alert('Drive backup updated: ' + json.id);
-    } else {
-      // create
-      const metadata = { name: APP_DRIVE_FILENAME, mimeType: 'application/json' };
-      const form = new FormData();
-      form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
-      form.append('file', new Blob([content], {type: 'application/json'}));
-      const resp = await fetch(`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,modifiedTime`, {
-        method: 'POST',
-        headers: { Authorization: 'Bearer ' + token },
-        body: form
-      });
-      if(!resp.ok) throw new Error('Upload failed: ' + resp.statusText);
-      const json = await resp.json();
-      driveStatusEl.textContent = 'Drive: Backup created';
-      alert('Drive backup created: ' + json.id);
-    }
-  } catch(err){
-    console.error('handleDriveUpload error', err);
-    alert('Drive upload error: ' + (err.message || err));
-    driveStatusEl.textContent = 'Drive: Upload failed';
+async function uploadFileToDrive(name, content, mimeType='application/json'){
+  const tokenObj = gapi.client.getToken();
+  if(!tokenObj || !tokenObj.access_token) {
+    // interactive if no token
+    await new Promise((resolve,reject) => tokenClient.requestAccessToken({prompt: 'consent', callback: (resp)=>{ if(resp.error) reject(resp); else resolve(resp); }}));
   }
-}
-
-/* Load backup from Drive (find file, prompt to replace local data) */
-async function handleDriveLoad(){
-  if(!gapi.client) return alert('Drive client not initialized.');
-  try {
-    driveStatusEl.textContent = 'Drive: Searching...';
-    const tokenObj = gapi.client.getToken();
-    if(!tokenObj || !tokenObj.access_token){
-      return tokenClient.requestAccessToken({prompt: 'consent'});
-    }
-    const token = tokenObj.access_token;
-    const file = await findDriveFileByName(APP_DRIVE_FILENAME);
-    if(!file){
-      driveStatusEl.textContent = 'Drive: No backup found';
-      alert('No backup file found on Drive named: ' + APP_DRIVE_FILENAME);
-      return;
-    }
-    // fetch content
-    const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, {
-      method: 'GET',
-      headers: { Authorization: 'Bearer ' + token }
+  const token = gapi.client.getToken().access_token;
+  // check existing
+  const existing = await findDriveFileByName(name);
+  const metadata = { name, mimeType };
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+  form.append('file', new Blob([content], {type: mimeType}));
+  if(existing){
+    const resp = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${existing.id}?uploadType=multipart&fields=id,modifiedTime`, {
+      method: 'PATCH',
+      headers: { Authorization: 'Bearer ' + token },
+      body: form
     });
-    if(!resp.ok) throw new Error('Download failed: ' + resp.statusText);
-    const text = await resp.text();
-    let obj;
-    try { obj = JSON.parse(text); } catch(e){ throw new Error('Downloaded file is not valid JSON'); }
-    if(!confirm(`This will overwrite your local data with backup from Drive (modified: ${file.modifiedTime}). Continue?`)) {
-      driveStatusEl.textContent = 'Drive: Load cancelled';
-      return;
-    }
-    // apply restore (similar to handleRestoreFile)
-    if(obj.products && obj.categories){
-      products = obj.products || [];
-      categories = obj.categories || [];
-      remarks = obj.remarks || [];
-      savedPurchaseLists = obj.savedPurchaseLists || [];
-      saveAll();
-      ensureDefaultRemarks();
-      renderCategoryOptions(); renderRemarksOptions(); renderCategoriesTable(); renderRemarksTable(); populateSavedLists(); refreshTable();
-      driveStatusEl.textContent = 'Drive: Backup loaded';
-      alert('Drive backup loaded successfully.');
-    } else {
-      throw new Error('Backup format invalid');
-    }
-  } catch(err){
-    console.error('handleDriveLoad error', err);
-    alert('Drive load error: ' + (err.message || err));
-    driveStatusEl.textContent = 'Drive: Load failed';
+    if(!resp.ok) throw new Error('Upload failed: ' + resp.statusText);
+    return await resp.json();
+  } else {
+    const resp = await fetch(`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,modifiedTime`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token },
+      body: form
+    });
+    if(!resp.ok) throw new Error('Upload failed: ' + resp.statusText);
+    return await resp.json();
   }
 }
 
-/* Produce a snapshot object for Drive */
+async function downloadFileFromDriveById(fileId){
+  const token = (gapi.client.getToken()||{}).access_token;
+  if(!token) {
+    await new Promise((resolve,reject) => tokenClient.requestAccessToken({prompt: 'consent', callback: (resp)=>{ if(resp.error) reject(resp); else resolve(resp); }}));
+  }
+  const t = (gapi.client.getToken()||{}).access_token;
+  const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+    method: 'GET',
+    headers: { Authorization: 'Bearer ' + t }
+  });
+  if(!resp.ok) throw new Error('Download failed: ' + resp.statusText);
+  return await resp.text();
+}
+
+/* Export a snapshot JSON for Drive */
 function exportDataForDrive(){
   return {
     exportedAt: Date.now(),
@@ -1316,6 +1324,181 @@ function exportDataForDrive(){
     remarks: remarks,
     savedPurchaseLists: savedPurchaseLists
   };
+}
+
+/* Create CSV string for products (same format as exportCSVLocal) */
+function productsToCSVString(){
+  const hdr = ['category','barcode','name','packs','pcsperpack','costperpack','cost','sellprice','suggestedsellprice','markup','checked','remarks','notes'];
+  const lines = [ hdr.join(',') ];
+  products.forEach(p=>{
+    const sellVal = (Number(p.sellPrice) === 0 || p.sellPrice === '' || p.sellPrice === null || p.sellPrice === undefined) ? '' : p.sellPrice;
+    const cols = [p.category||'', p.barcode||'', p.name||'', p.packs||0, p.pcsPerPack||0, p.costPerPack||0, p.cost||0, sellVal, p.suggestedSellPrice||'', p.markup||'', p.checked||false, p.remarks||'', p.notes||''];
+    lines.push(cols.map(c => String(c).replace(/,/g,'')).join(','));
+  });
+  return lines.join('\n');
+}
+function categoriesToCSVString(){ const hdr=['category']; const lines=[hdr.join(',')]; categories.forEach(c=>lines.push([c].join(','))); return lines.join('\n'); }
+function remarksToCSVString(){ const hdr=['remark']; const lines=[hdr.join(',')]; remarks.forEach(r=>lines.push([r].join(','))); return lines.join('\n'); }
+function purchasesToCSVString(){
+  const hdr = ['name','created','items_json'];
+  const lines = [ hdr.join(',') ];
+  savedPurchaseLists.forEach(l=>{
+    const line = [ l.name, l.created, JSON.stringify(l.items).replace(/,/g,';') ];
+    lines.push(line.join(','));
+  });
+  return lines.join('\n');
+}
+
+/* -------------------------
+   Drive: Export All (system-wide)
+   ------------------------- */
+async function handleDriveExportAll(){
+  try {
+    driveStatusEl.textContent = 'Drive: Exporting...';
+    const snapshot = exportDataForDrive();
+    const jsonContent = JSON.stringify(snapshot, null, 2);
+    await uploadFileToDrive(APP_DRIVE_FILENAME, jsonContent, 'application/json');
+
+    // also upload CSVs for convenience / interoperability
+    await uploadFileToDrive(DRIVE_PRODUCTS_CSV, productsToCSVString(), 'text/csv');
+    await uploadFileToDrive(DRIVE_CATEGORIES_CSV, categoriesToCSVString(), 'text/csv');
+    await uploadFileToDrive(DRIVE_REMARKS_CSV, remarksToCSVString(), 'text/csv');
+    await uploadFileToDrive(DRIVE_PURCHASES_CSV, purchasesToCSVString(), 'text/csv');
+
+    driveStatusEl.textContent = 'Drive: Export complete';
+    alert('Drive export completed (snapshot + CSVs).');
+  } catch(err){
+    console.error('handleDriveExportAll error', err);
+    alert('Drive export failed: ' + (err.message||err));
+    driveStatusEl.textContent = 'Drive: Export failed';
+  }
+}
+
+/* -------------------------
+   Drive: Import All (system-wide)
+   ------------------------- */
+async function handleDriveImportAll(){
+  try {
+    driveStatusEl.textContent = 'Drive: Searching for backup...';
+    const file = await findDriveFileByName(APP_DRIVE_FILENAME);
+    if(!file){
+      driveStatusEl.textContent = 'Drive: No backup found';
+      if(confirm('No full JSON snapshot found on Drive. Do you want to attempt to import CSVs (products/categories/remarks/purchase lists) if available?')){
+        await importCSVsFromDrive();
+      } else {
+        return;
+      }
+      return;
+    }
+    // download JSON snapshot
+    const text = await downloadFileFromDriveById(file.id);
+    const obj = JSON.parse(text);
+    if(!confirm(`This will merge Drive backup into your local data (Drive snapshot modified: ${file.modifiedTime}). Continue?`)) {
+      driveStatusEl.textContent = 'Drive: Import cancelled';
+      return;
+    }
+    // Merge logic: upsert products by barcode or exact name; merge categories/remarks/purchase lists
+    let merged = 0, added = 0;
+    (obj.products || []).forEach(driveItem=>{
+      const barcode = (driveItem.barcode||'').toString();
+      const name = (driveItem.name||'').toString();
+      let existing = null;
+      if(barcode) existing = products.find(p=> (p.barcode||'').toString() === barcode);
+      if(!existing && name) existing = products.find(p=> (p.name||'').toString().toLowerCase() === name.toLowerCase());
+      if(existing){
+        // apply fields (prefer drive item values if present)
+        existing.category = driveItem.category || existing.category;
+        existing.barcode = driveItem.barcode || existing.barcode;
+        existing.name = driveItem.name || existing.name;
+        existing.packs = driveItem.packs || existing.packs;
+        existing.pcsPerPack = driveItem.pcsPerPack || existing.pcsPerPack;
+        existing.costPerPack = driveItem.costPerPack || existing.costPerPack;
+        existing.cost = driveItem.cost || existing.cost;
+        existing.sellPrice = (driveItem.sellPrice !== undefined) ? driveItem.sellPrice : existing.sellPrice;
+        existing.suggestedSellPrice = driveItem.suggestedSellPrice || existing.suggestedSellPrice;
+        existing.markup = driveItem.markup || existing.markup;
+        existing.checked = driveItem.checked || existing.checked;
+        existing.notes = driveItem.notes || existing.notes;
+        existing.remarks = driveItem.remarks || existing.remarks;
+        merged++;
+      } else {
+        products.push(Object.assign({}, driveItem, { id: uid() }));
+        added++;
+      }
+    });
+    // categories/remarks/purchase lists: merge (avoid duplicates)
+    (obj.categories || []).forEach(c=>{ if(c && !categories.includes(c)) categories.push(c); });
+    (obj.remarks || []).forEach(r=>{ if(r && !remarks.includes(r)) remarks.push(r); });
+    (obj.savedPurchaseLists || []).forEach(l=>{
+      // if name exists, skip or append timestamp
+      const has = savedPurchaseLists.some(s => s.name === l.name && s.created === l.created);
+      if(!has) savedPurchaseLists.push(l);
+    });
+    saveAll();
+    ensureDefaultRemarks();
+    renderCategoryOptions();
+    renderRemarksOptions();
+    renderCategoriesTable();
+    renderRemarksTable();
+    populateSavedLists();
+    refreshTable();
+    driveStatusEl.textContent = 'Drive: Import complete';
+    alert(`Drive import completed. Products merged: ${merged}. Products added: ${added}.`);
+  } catch(err){
+    console.error('handleDriveImportAll error', err);
+    alert('Drive import failed: ' + (err.message||err));
+    driveStatusEl.textContent = 'Drive: Import failed';
+  }
+}
+
+/* Helper: attempt to import CSVs individually from Drive if the JSON snapshot not present */
+async function importCSVsFromDrive(){
+  try {
+    driveStatusEl.textContent = 'Drive: Searching CSV files...';
+    const prodFile = await findDriveFileByName(DRIVE_PRODUCTS_CSV);
+    const catFile = await findDriveFileByName(DRIVE_CATEGORIES_CSV);
+    const remFile = await findDriveFileByName(DRIVE_REMARKS_CSV);
+    const purFile = await findDriveFileByName(DRIVE_PURCHASES_CSV);
+    if(!prodFile && !catFile && !remFile && !purFile){ alert('No importable CSV files found on Drive.'); driveStatusEl.textContent = 'Drive: No CSVs found'; return; }
+
+    if(prodFile){
+      const text = await downloadFileFromDriveById(prodFile.id);
+      const rows = parseCSV(text);
+      importRowsAndUpsert(rows);
+    }
+    if(catFile){
+      const text = await downloadFileFromDriveById(catFile.id);
+      const rows = parseCSV(text);
+      rows.forEach(rw=>{ const name = rw.category || rw.name || ''; if(name && !categories.includes(name)) categories.push(name); });
+      saveAll(); renderCategoryOptions(); renderCategoriesTable();
+    }
+    if(remFile){
+      const text = await downloadFileFromDriveById(remFile.id);
+      const rows = parseCSV(text);
+      rows.forEach(rw=>{ const name = rw.remark || rw.name || rw.remarks || ''; if(name && !remarks.includes(name)) remarks.push(name); });
+      saveAll(); renderRemarksOptions(); renderRemarksTable();
+    }
+    if(purFile){
+      const text = await downloadFileFromDriveById(purFile.id);
+      const rows = parseCSV(text);
+      rows.forEach(rw=>{
+        const name = rw.name || ('Imported_'+new Date().toISOString());
+        const created = Number(rw.created) || Date.now();
+        let items = [];
+        if(rw.items_json){
+          try{ items = JSON.parse(rw.items_json.replace(/;/g,',')) }catch(err){ try{ items = JSON.parse(rw.items_json) }catch(e){} }
+        }
+        savedPurchaseLists.push({ name, items, created });
+      });
+      saveAll(); populateSavedLists();
+    }
+    driveStatusEl.textContent = 'Drive: CSV import complete';
+    alert('Drive CSV import completed where files existed.');
+  } catch(err){
+    console.error('importCSVsFromDrive error', err);
+    alert('Drive CSV import failed: ' + (err.message||err));
+    driveStatusEl.textContent = 'Drive: CSV import failed';
+  }
 }
 
 /* -------------------------
@@ -1334,12 +1517,11 @@ function showView(which){
   loadAll();
   if(!Array.isArray(categories) || categories.length === 0) categories = [];
   if(!Array.isArray(remarks) || remarks.length === 0) remarks = [];
+  if(!Array.isArray(products) || products.length === 0) products = [];
+  if(!Array.isArray(savedPurchaseLists) || savedPurchaseLists.length === 0) savedPurchaseLists = [];
   ensureDefaultRemarks();
   saveAll();
 })();
-
-/* Expose for debugging if needed */
-window._store_inventory = { products, categories, remarks, saveAll, loadAll };
 
 })();
 </script>
