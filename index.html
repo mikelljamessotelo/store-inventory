@@ -1106,6 +1106,153 @@ function handleCategoriesImport(e){ /* simplified */ const f=e.target.files[0]; 
 function handleRemarksImport(e){ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ const rows=parseCSV(r.result); rows.forEach(rw=>{ const name=rw.remark||rw.name||rw.remarks||''; if(name && !remarks.includes(name)) remarks.push(name); }); saveAll(); renderRemarksOptions(); renderRemarksTable(); alert('Imported remarks: '+rows.length); }catch(err){ alert('Remarks import error: '+err.message);} }; r.readAsText(f); e.target.value=''; }
 
 })();
+// ✅ Legacy Import Handler (placeholder to prevent crash)
+function handleLegacyImport() {
+  const fileInput = document.getElementById('fileImportLegacy');
+  if (!fileInput) return;
+  fileInput.value = '';
+  fileInput.click();
+
+  fileInput.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      try {
+        const csv = evt.target.result;
+        alert("Legacy import completed (mock function). Please ensure your CSV format is compatible with v3.x structure.");
+        // TODO: Map CSV columns to current format if needed
+      } catch (err) {
+        alert("Error importing legacy data: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+}
+// ✅ Drive Connect Handler (safe fallback)
+function handleDriveConnect() {
+  try {
+    if (typeof gapi === 'undefined' || typeof google === 'undefined') {
+      alert("Google API not loaded. Please ensure you're online.");
+      return;
+    }
+
+    // Initialize token client if not already done
+    if (!tokenClient) {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: SCOPES,
+        callback: (tokenResponse) => {
+          if (tokenResponse && tokenResponse.access_token) {
+            driveStatusEl.textContent = "Drive: Connected";
+            btnDriveUpload.disabled = false;
+            btnDriveLoad.disabled = false;
+            alert("✅ Connected to Google Drive successfully!");
+          } else {
+            alert("Drive connection failed. Try again.");
+          }
+        }
+      });
+    }
+
+    // Request access token (triggers Google sign-in popup)
+    tokenClient.requestAccessToken();
+
+  } catch (err) {
+    console.error(err);
+    alert("Drive initialization error: " + err.message);
+  }
+}
+// ✅ Drive Export All Handler (safe fallback)
+function handleDriveExportAll() {
+  try {
+    if (!gapi || !gapi.client || !gapi.client.drive) {
+      alert("⚠️ Google Drive not initialized. Please connect first.");
+      return;
+    }
+
+    const fileContent = JSON.stringify({
+      products,
+      categories,
+      remarks,
+      savedPurchaseLists,
+      timestamp: new Date().toISOString()
+    }, null, 2);
+
+    const fileName = `StoreInventoryBackup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+    const blob = new Blob([fileContent], { type: "application/json" });
+    const metadata = {
+      name: fileName,
+      mimeType: "application/json"
+    };
+
+    const accessToken = gapi.client.getToken().access_token;
+    fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + accessToken },
+      body: new Blob([
+        `--foo_bar_baz\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--foo_bar_baz\r\nContent-Type: application/json\r\n\r\n${fileContent}\r\n--foo_bar_baz--`
+      ], { type: "multipart/related; boundary=foo_bar_baz" })
+    }).then(r => {
+      if (r.ok) {
+        alert("✅ Backup uploaded to Google Drive successfully!");
+      } else {
+        alert("⚠️ Upload failed. Please try again.");
+      }
+    }).catch(err => alert("Drive upload error: " + err.message));
+  } catch (err) {
+    alert("Error exporting to Drive: " + err.message);
+  }
+}
+// ✅ Drive Import All Handler (safe fallback)
+function handleDriveImportAll() {
+  try {
+    if (!gapi || !gapi.client || !gapi.client.drive) {
+      alert("⚠️ Google Drive not initialized. Please connect first.");
+      return;
+    }
+
+    const accessToken = gapi.client.getToken().access_token;
+    const query = "name contains 'StoreInventoryBackup_' and mimeType='application/json'";
+
+    gapi.client.drive.files.list({
+      q: query,
+      fields: "files(id, name, modifiedTime)",
+      orderBy: "modifiedTime desc",
+      pageSize: 1
+    }).then((response) => {
+      const files = response.result.files;
+      if (!files || files.length === 0) {
+        alert("⚠️ No backup files found in your Drive.");
+        return;
+      }
+
+      const file = files[0];
+      fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, {
+        headers: { "Authorization": "Bearer " + accessToken }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.products && data.categories && data.remarks && data.savedPurchaseLists) {
+          products = data.products;
+          categories = data.categories;
+          remarks = data.remarks;
+          savedPurchaseLists = data.savedPurchaseLists;
+          saveAll();
+          alert(`✅ Backup "${file.name}" restored successfully!`);
+          location.reload();
+        } else {
+          alert("⚠️ Invalid backup format.");
+        }
+      })
+      .catch(err => alert("Drive download error: " + err.message));
+    }).catch(err => alert("Drive listing error: " + err.message));
+  } catch (err) {
+    alert("Error importing from Drive: " + err.message);
+  }
+}
+
+/* Close the main script properly */
 </script>
 </body>
 </html>
