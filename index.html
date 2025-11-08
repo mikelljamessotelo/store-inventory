@@ -1,813 +1,180 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Mattmat’s Inventory — Simple v3.2.0 (Drive Enabled)</title>
-<style>
-  :root {
-    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
-  }
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Mattmat’s Inventory — Simple v3.2.4 (Drive Enabled)</title><style>:root{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial}body{margin:0;padding:14px;background:#f6f6f6;color:#111}header{display:flex;gap:12px;align-items:center;margin-bottom:12px}h1{font-size:18px;margin:0}.controls{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}button{background:#fff;border:1px solid #222;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:14px}button:disabled{opacity:.5;cursor:not-allowed}.view{display:none}.view.active{display:block}table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid #222;padding:10px;text-align:left;font-size:15px;vertical-align:middle}th.sortable{cursor:pointer}tr.selected{background:#fff8d6}.topbar{display:flex;gap:8px;margin-bottom:8px;align-items:center}.search{flex:1}input[type=text],input[type=number],select,textarea{padding:8px;border-radius:8px;border:1px solid #bbb;width:100%;box-sizing:border-box}input.sell-input{background:#fff9c4}input[readonly].borderless{border:none;background:transparent;box-shadow:none;padding:8px}.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center}.modal{background:#fff;padding:16px;border-radius:10px;min-width:320px;max-width:900px;box-shadow:0 10px 30px rgba(0,0,0,.25)}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}.btn-danger{background:#ffebee;border:1px solid #d32f2f;color:#900}.note{font-size:12px;color:#555}.notes-td textarea{width:100%;height:44px;border-radius:6px;border:1px solid #ccc;padding:6px}.touch-check{display:flex;align-items:center;justify-content:center;width:92px;height:40px}.no-print{display:block}.note-print{display:none}.drive-status{font-size:13px;padding:6px;border-radius:6px;border:1px dashed #bbb;background:#fff;margin-left:6px}@media(max-width:700px){.form-grid{grid-template-columns:1fr}th,td{font-size:14px;padding:8px}}@media print{header,.controls,.topbar,.save-load-row,.no-print{display:none!important}body{margin:0;padding:4px;font-size:13.5px}#purchaseContainer table{width:100%;border-collapse:collapse;border:none}#purchaseContainer th,#purchaseContainer td{border-top:1px solid #000;border-bottom:1px solid #000;border-left:none;border-right:none;padding:4px 6px;font-size:13.5px;text-align:left;vertical-align:top}#purchaseContainer thead th{font-weight:700}#purchaseContainer{margin:0 auto;width:95%}.note-print{display:block;padding:2px 0;border:0}textarea.note-input{display:none!important}}</style></head><body>
 
-  body {
-    margin: 0;
-    padding: 14px;
-    background: #f6f6f6;
-    color: #111;
-  }
-
-  header {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    margin-bottom: 12px;
-  }
-
-  h1 {
-    font-size: 18px;
-    margin: 0;
-  }
-
-  .controls {
-    margin-left: auto;
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  button {
-    background: #fff;
-    border: 1px solid #222;
-    padding: 8px 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .view {
-    display: none;
-  }
-
-  .view.active {
-    display: block;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    background: #fff;
-  }
-
-  /* Bigger, more readable tables */
-  th, td {
-    border: 1px solid #222;
-    padding: 10px;
-    text-align: left;
-    font-size: 15px;
-    vertical-align: middle;
-  }
-
-  th.sortable {
-    cursor: pointer;
-  }
-
-  tr.selected {
-    background: #fff8d6;
-  }
-
-  .topbar {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 8px;
-    align-items: center;
-  }
-
-  .search {
-    flex: 1;
-  }
-
-  input[type=text], input[type=number], select, textarea {
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid #bbb;
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.35);
-    display: none;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .modal {
-    background: #fff;
-    padding: 16px;
-    border-radius: 10px;
-    min-width: 320px;
-    max-width: 900px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-  }
-
-  .modal h3 {
-    margin-top: 0;
-  }
-
-  .form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
-  .small {
-    width: 120px;
-  }
-
-  .btn-row {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-    margin-top: 12px;
-  }
-
-  .note {
-    font-size: 12px;
-    color: #555;
-  }
-
-  .notes-td textarea {
-    width: 100%;
-    height: 44px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    padding: 6px;
-  }
-
-  /* Smaller, centered checkboxes */
-  .touch-check {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 40px;
-  }
-
-  .touch-check input[type=checkbox] {
-    transform: scale(1.2);
-    width: 20px;
-    height: 20px;
-  }
-
-  .no-print {
-    display: block;
-  }
-
-  .note-print {
-    display: none;
-  }
-
-  .drive-status {
-    font-size: 13px;
-    padding: 6px;
-    border-radius: 6px;
-    border: 1px dashed #bbb;
-    background: #fff;
-    margin-left: 6px;
-  }
-
-  @media (max-width: 700px) {
-    .form-grid {
-      grid-template-columns: 1fr;
-    }
-
-    th, td {
-      font-size: 14px;
-      padding: 8px;
-    }
-  }
-
-  /* ===========================
-     Receipt-style print rules
-     =========================== */
-  @media print {
-    header, .controls, .topbar, .save-load-row, .no-print {
-      display: none !important;
-    }
-
-    body {
-      margin: 0;
-      padding: 4px;
-      font-size: 13.5px;
-    }
-
-    #purchaseContainer table {
-      width: 100%;
-      border-collapse: collapse;
-      border: none;
-    }
-
-    #purchaseContainer th, #purchaseContainer td {
-      border-top: 1px solid #000;
-      border-bottom: 1px solid #000;
-      border-left: none;
-      border-right: none;
-      padding: 4px 6px;
-      font-size: 13.5px;
-      text-align: left;
-      vertical-align: top;
-    }
-
-    #purchaseContainer thead th {
-      font-weight: 700;
-    }
-
-    #purchaseContainer {
-      margin: 0 auto;
-      width: 95%;
-    }
-
-    .note-print {
-      display: block;
-      padding: 2px 0;
-      border: 0;
-    }
-
-    textarea.note-input {
-      display: none !important;
-    }
-  }
-</style>
-
-</head>
-<body>
-<header>
-  <div>
-    <h1>Mattmat’s Inventory — Simple v3.2.0 (Drive Enabled)</h1>
-    <div class="note">Single-file — offline. Data saved to localStorage. Optional Google Drive sync.</div>
-  </div>
-  <div class="controls">
-    <button id="btnAdd">➕ Add Item</button>
-    <button id="btnDelete" disabled>🗑️ Delete Item</button>
-    <button id="btnEditItem" disabled>✏️ Edit Item</button>
-    <button id="btnEditCost" disabled>💰 Edit Cost</button>
-    <button id="btnUncheck">🧹 Uncheck All</button>
-    <button id="btnImportLocal">📂 Import CSV</button>
-    <button id="btnExportLocal">💾 Export CSV</button>
-    <button id="btnImportDrive">☁️ Import from Drive</button>
-    <button id="btnExportDrive">☁️ Export to Drive</button>
-    <button id="btnCategories">📂 Categories</button>
-    <button id="btnGoPurchase">🛒 Purchase List</button>
-    <div class="drive-status" id="driveStatus">Drive: Not initialized</div>
-  </div>
-</header>
+<header><div><h1>Store Inventory — v3.2.4</h1><div class="note">Created by Mikell James Sotelo</div></div><div class="controls">
+<button id="btnAdd">➕ Add Item</button>
+<button id="btnDelete" disabled>🗑️ Delete Item</button>
+<button id="btnEditItem" disabled>✏️ Edit Item</button>
+<button id="btnEditCost" disabled>💰 Edit Cost</button>
+<button id="btnUncheck">🧹 Uncheck All</button>
+<button id="btnImportLocal">📂 Import CSV</button>
+<button id="btnExportLocal">💾 Export CSV</button>
+<button id="btnImportDrive">☁️ Import from Drive</button>
+<button id="btnExportDrive">☁️ Export to Drive</button>
+<button id="btnCategories">📂 Categories / Remarks</button>
+<button id="btnGoPurchase">🛒 Purchase List</button>
+<div class="drive-status" id="driveStatus">Drive: Not initialized</div>
+</div></header>
 
 <section id="productView" class="view active">
-  <div class="topbar">
-    <input id="search" class="search" type="text" placeholder="Search by Item Name or Barcode...">
-    <label style="width:110px">Rows: <input id="rowsPerPage" type="number" value="9999" min="1" style="width:60px"></label>
-  </div>
-  <div style="overflow:auto;max-height:62vh">
-    <table id="productTable">
-      <thead>
-        <tr>
-          <th class="sortable" data-key="category">Category</th>
-          <th class="sortable" data-key="barcode">Barcode</th>
-          <th class="sortable" data-key="name">Item Name</th>
-          <th style="width:72px">✅</th>
-          <th class="sortable" data-key="cost">Cost</th>
-          <th class="sortable" data-key="sellPrice">Sell Price</th>
-          <th>Suggested Sell Price</th>
-          <th>Mark-Up</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+<div class="topbar"><input id="search" class="search" type="text" placeholder="Search by Item Name, Barcode, or Remarks..."><label style="width:110px">Rows: <input id="rowsPerPage" type="number" value="9999" min="1" style="width:60px"></label></div>
+<div style="overflow:auto;max-height:62vh"><table id="productTable"><thead><tr>
+<th class="sortable" data-key="category">Category</th>
+<th class="sortable" data-key="barcode">Barcode</th>
+<th class="sortable" data-key="name">Item Name</th>
+<th style="width:110px">Purchase</th>
+<th class="sortable" data-key="cost">Cost</th>
+<th class="sortable" data-key="sellPrice">Sell Price</th>
+<th>Suggested Sell Price</th>
+<th>Mark-Up</th>
+<th class="sortable" data-key="remarks">Remarks</th>
+</tr></thead><tbody></tbody></table></div>
 </section>
 
 <section id="purchaseView" class="view">
-  <div class="save-load-row no-print" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-    <button id="btnBack">◀ Back</button>
-    <button id="btnSavePurchase">💾 Save Purchase List</button>
-    <select id="savedLists"></select>
-    <button id="btnLoadPurchase">⤵ Load</button>
-    <button id="btnPrint">🖨️ Print Purchase List</button>
-  </div>
-  <div id="purchaseContainer" style="overflow:auto"></div>
+<div class="save-load-row no-print" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+<button id="btnBack">◀ Back</button>
+<button id="btnSavePurchase">💾 Save Purchase List</button>
+<button id="btnExportPurchase">⬇️ Export Purchase Lists</button>
+<button id="btnImportPurchase">⬆️ Import Purchase Lists</button>
+<select id="savedLists"></select>
+<button id="btnLoadPurchase">⤵ Load</button>
+<button id="btnPrint">🖨️ Print Purchase List</button>
+</div>
+<div id="purchaseContainer" style="overflow:auto"></div>
 </section>
 
 <section id="categoriesView" class="view">
-  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
-    <button id="btnBackFromCategories">◀ Back</button>
-    <button id="btnAddCategory">➕ Add Category</button>
-    <button id="btnExportCategories">💾 Export Categories</button>
-    <button id="btnImportCategories">📂 Import Categories</button>
-  </div>
-  <div style="overflow:auto;max-height:68vh">
-    <table id="categoriesTable"><thead><tr><th>Category</th><th>Actions</th></tr></thead><tbody></tbody></table>
-  </div>
+<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px">
+<button id="btnBackFromCategories">◀ Back</button>
+<div style="flex:1;display:flex;gap:12px">
+<div style="flex:1">
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+<button id="btnAddCategory">➕ Add Category</button>
+<button id="btnExportCategories">💾 Export Categories</button>
+<button id="btnImportCategories">📂 Import Categories</button>
+</div>
+<div style="overflow:auto;max-height:48vh"><table id="categoriesTable"><thead><tr><th>Category</th><th>Actions</th></tr></thead><tbody></tbody></table></div>
+</div>
+<div style="flex:1">
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+<button id="btnAddRemark">➕ Add Remark</button>
+<button id="btnExportRemarks">💾 Export Remarks</button>
+<button id="btnImportRemarks">📂 Import Remarks</button>
+</div>
+<div style="overflow:auto;max-height:48vh"><table id="remarksTable"><thead><tr><th>Remark</th><th>Actions</th></tr></thead><tbody></tbody></table></div>
+</div>
+</div>
+</div>
 </section>
 
-<!-- Add/Edit Item Modal -->
-<div id="modalItem" class="modal-backdrop">
-  <div class="modal" role="dialog" aria-modal="true">
-    <h3 id="modalItemTitle">Add Item</h3>
-    <div class="form-grid">
-      <div>
-        <label>Category</label>
-        <select id="itemCategory"></select>
-      </div>
-      <div>
-        <label>Barcode</label>
-        <input id="itemBarcode" type="text">
-      </div>
-      <div style="grid-column:1/3">
-        <label>Item Name</label>
-        <input id="itemName" type="text">
-      </div>
-      <div>
-        <label>Packs</label>
-        <input id="itemPacks" type="number" min="0" value="1">
-      </div>
-      <div>
-        <label>Pcs per Pack</label>
-        <input id="itemPcsPerPack" type="number" min="1" value="1">
-      </div>
-      <div>
-        <label>Cost per Pack</label>
-        <input id="itemCostPerPack" type="number" min="0" step="any" value="1">
-      </div>
-      <div>
-        <label>Cost (auto)</label>
-        <input id="itemCost" type="number" readonly>
-      </div>
-      <div>
-        <label>Sell Price (manual)</label>
-        <input id="itemSellPrice" type="number" min="0" step="any" value="0">
-      </div>
-    </div>
-    <div class="btn-row">
-      <button id="itemCancel">Cancel</button>
-      <button id="itemSave">Save</button>
-    </div>
-  </div>
+<div id="modalItem" class="modal-backdrop"><div class="modal" role="dialog" aria-modal="true">
+<h3 id="modalItemTitle">Add Item</h3>
+<div class="form-grid">
+<div><label>Category</label><select id="itemCategory"></select></div>
+<div><label>Barcode</label><input id="itemBarcode" type="text"></div>
+<div style="grid-column:1/3"><label>Item Name</label><input id="itemName" type="text"></div>
+<div><label>Packs</label><input id="itemPacks" type="number" min="0" value="1"></div>
+<div><label>Pcs per Pack</label><input id="itemPcsPerPack" type="number" min="1" value="1"></div>
+<div><label>Cost per Pack</label><input id="itemCostPerPack" type="number" min="0" step="any" value="1"></div>
+<div><label>Cost (auto)</label><input id="itemCost" class="borderless" type="number" readonly></div>
+<div><label>Sell Price (manual)</label><input id="itemSellPrice" class="sell-input" type="number" min="0" step="any" value="0"></div>
+<div><label>Suggested Sell Price (auto)</label><input id="itemSuggested" class="borderless" type="number" readonly></div>
+<div style="grid-column:1/3"><label>Remarks</label><select id="itemRemarks"></select></div>
 </div>
+<div class="btn-row">
+<button id="itemCancel">Cancel</button>
+<button id="itemSave">Save</button>
+<button id="itemDelete" class="btn-danger" style="display:none">🗑️ Delete Item</button>
+</div>
+</div></div>
 
-<!-- Edit Cost Modal -->
-<div id="modalEditCost" class="modal-backdrop">
-  <div class="modal" role="dialog" aria-modal="true">
-    <h3>Edit Cost</h3>
-    <div class="form-grid">
-      <div>
-        <label>Packs</label>
-        <input id="editPacks" type="number" min="0">
-      </div>
-      <div>
-        <label>Pcs per Pack</label>
-        <input id="editPcsPerPack" type="number" min="1">
-      </div>
-      <div>
-        <label>Cost per Pack</label>
-        <input id="editCostPerPack" type="number" min="0" step="any">
-      </div>
-      <div>
-        <label>Cost (auto)</label>
-        <input id="editCost" type="number" readonly>
-      </div>
-    </div>
-    <div class="btn-row">
-      <button id="editCancel">Cancel</button>
-      <button id="editSave">Save Cost</button>
-    </div>
-  </div>
+<div id="modalEditCost" class="modal-backdrop"><div class="modal" role="dialog" aria-modal="true">
+<h3>Edit Cost</h3>
+<div class="form-grid">
+<div><label>Packs</label><input id="editPacks" type="number" min="0"></div>
+<div><label>Pcs per Pack</label><input id="editPcsPerPack" type="number" min="1"></div>
+<div><label>Cost per Pack</label><input id="editCostPerPack" type="number" min="0" step="any"></div>
+<div><label>Cost (auto)</label><input id="editCost" class="borderless" type="number" readonly></div>
 </div>
+<div class="btn-row"><button id="editCancel">Cancel</button><button id="editSave">Save Cost</button></div>
+</div></div>
 
 <input id="fileInputLocal" type="file" accept="text/csv" style="display:none">
 <input id="fileInputCats" type="file" accept="text/csv" style="display:none">
+<input id="fileInputRemarks" type="file" accept="text/csv" style="display:none">
+<input id="fileInputPurchase" type="file" accept="text/csv" style="display:none">
 
-<!-- Load Google client library first (gapi) -->
 <script src="https://apis.google.com/js/api.js"></script>
 
 <script>
-/*
-  NOTE: These are the keys you previously included in your working file.
-  If you want to replace them, change the values below.
-*/
-const GOOGLE_API_KEY = 'AIzaSyBQ9QgFBIkvxvHMV-3wUr7qXwitxwBp0Ro';
-const GOOGLE_CLIENT_ID = '96651524997-fu2eois3b9geiqdo2js2600hg1mj84p3.apps.googleusercontent.com';
-const APP_DRIVE_FILENAME = 'mattmat_inventory_backup.csv';
-
-// Full app (merged v3.1.1 Drive + v3.2.0 features)
+const GOOGLE_API_KEY='AIzaSyBQ9QgFBIkvxvHMV-3wUr7qXwitxwBp0Ro',GOOGLE_CLIENT_ID='96651524997-fu2eois3b9geiqdo2js2600hg1mj84p3.apps.googleusercontent.com',APP_DRIVE_FILENAME='mattmat_inventory_backup.csv',APP_DRIVE_PURCHASE_FILENAME='mattmat_purchase_lists_backup.csv';
 (function(){
-  // Storage keys
-  const KEY = 'mattmat_products_v3_2';
-  const KEY_CATS = 'mattmat_categories_v3_2';
-  const KEY_SAVED_PURCHASES = 'mattmat_saved_purchase_lists_v3_2';
-
-  // Elements
-  const productTableBody = document.querySelector('#productTable tbody');
-  const searchInput = document.getElementById('search');
-  const btnAdd = document.getElementById('btnAdd');
-  const btnDelete = document.getElementById('btnDelete');
-  const btnEditItem = document.getElementById('btnEditItem');
-  const btnEditCost = document.getElementById('btnEditCost');
-  const btnUncheck = document.getElementById('btnUncheck');
-  const btnImportLocal = document.getElementById('btnImportLocal');
-  const btnExportLocal = document.getElementById('btnExportLocal');
-  const btnImportDrive = document.getElementById('btnImportDrive');
-  const btnExportDrive = document.getElementById('btnExportDrive');
-  const btnCategories = document.getElementById('btnCategories');
-  const btnGoPurchase = document.getElementById('btnGoPurchase');
-  const productView = document.getElementById('productView');
-  const purchaseView = document.getElementById('purchaseView');
-  const categoriesView = document.getElementById('categoriesView');
-  const btnBack = document.getElementById('btnBack');
-  const btnPrint = document.getElementById('btnPrint');
-  const purchaseContainer = document.getElementById('purchaseContainer');
-  const savedListsSelect = document.getElementById('savedLists');
-  const btnSavePurchase = document.getElementById('btnSavePurchase');
-  const btnLoadPurchase = document.getElementById('btnLoadPurchase');
-  const fileInputLocal = document.getElementById('fileInputLocal');
-  const fileInputCats = document.getElementById('fileInputCats');
-  const rowsPerPage = document.getElementById('rowsPerPage');
-  const driveStatus = document.getElementById('driveStatus');
-
-  // Modals & item fields
-  const modalItem = document.getElementById('modalItem');
-  const modalItemTitle = document.getElementById('modalItemTitle');
-  const itemCategory = document.getElementById('itemCategory');
-  const itemBarcode = document.getElementById('itemBarcode');
-  const itemName = document.getElementById('itemName');
-  const itemPacks = document.getElementById('itemPacks');
-  const itemPcsPerPack = document.getElementById('itemPcsPerPack');
-  const itemCostPerPack = document.getElementById('itemCostPerPack');
-  const itemCost = document.getElementById('itemCost');
-  const itemSellPrice = document.getElementById('itemSellPrice');
-  const itemCancel = document.getElementById('itemCancel');
-  const itemSave = document.getElementById('itemSave');
-
-  const modalEditCost = document.getElementById('modalEditCost');
-  const editPacks = document.getElementById('editPacks');
-  const editPcsPerPack = document.getElementById('editPcsPerPack');
-  const editCostPerPack = document.getElementById('editCostPerPack');
-  const editCost = document.getElementById('editCost');
-  const editCancel = document.getElementById('editCancel');
-  const editSave = document.getElementById('editSave');
-
-  // Categories
-  const btnBackFromCategories = document.getElementById('btnBackFromCategories');
-  const btnAddCategory = document.getElementById('btnAddCategory');
-  const btnExportCategories = document.getElementById('btnExportCategories');
-  const btnImportCategories = document.getElementById('btnImportCategories');
-  const categoriesTableBody = document.querySelector('#categoriesTable tbody');
-
-  // State
-  let products = [];
-  let categories = [];
-  let selectedId = null;
-  let sortState = {key:null,asc:true};
-
-  // Google state
-  let gapiInited = false;
-  let tokenClient = null;
-  let accessToken = null;
-  let gisLoaded = false;
-
-  // Helpers
-  function uid(){return 'id_'+Math.random().toString(36).slice(2,9)}
-  function save(){localStorage.setItem(KEY, JSON.stringify(products))}
-  function load(){try{products = JSON.parse(localStorage.getItem(KEY))||[]}catch(e){products=[]}}
-  function saveCats(){localStorage.setItem(KEY_CATS, JSON.stringify(categories))}
-  function loadCats(){try{categories = JSON.parse(localStorage.getItem(KEY_CATS))||[]}catch(e){categories=[]}}
-  function saveSavedLists(lists){localStorage.setItem(KEY_SAVED_PURCHASES, JSON.stringify(lists))}
-  function loadSavedLists(){try{return JSON.parse(localStorage.getItem(KEY_SAVED_PURCHASES))||[]}catch(e){return[]}}
-  function computeCost(packs, pcsPerPack, costPerPack){ packs = Number(packs)||0; pcsPerPack = Number(pcsPerPack)||0; costPerPack = Number(costPerPack)||0; if(packs*pcsPerPack === 0) return 0; return costPerPack / (packs * pcsPerPack); }
-  function computeSuggested(cost){return (Number(cost)||0) * 1.2}
-  function computeMarkup(sell,cost){return (Number(sell)||0) - (Number(cost)||0)}
-  function formatNumber(v){ if(v===undefined || v===null) return ''; return (Number(v) || 0).toFixed(2); }
-  function escapeHtml(s){return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-
-  // Render product table
-  function refreshTable(){
-    productTableBody.innerHTML = '';
-    let q = (searchInput.value||'').trim().toLowerCase();
-    let rows = products.slice();
-    if(sortState.key){ rows.sort((a,b)=>{ let A = a[sortState.key]; let B = b[sortState.key]; if(typeof A === 'string') A=A.toLowerCase(); if(typeof B==='string') B=B.toLowerCase(); if(A<B) return sortState.asc?-1:1; if(A>B) return sortState.asc?1:-1; return 0; }); }
-    if(q){rows = rows.filter(it=> (it.name||'').toLowerCase().includes(q) || (it.barcode||'').toLowerCase().includes(q))}
-    const max = Number(rowsPerPage.value)||rows.length;
-    rows.slice(0,max).forEach(it=>{
-      const tr = document.createElement('tr'); tr.dataset.id = it.id; if(it.id === selectedId) tr.classList.add('selected');
-      const tdCat = document.createElement('td'); tdCat.textContent = it.category || '';
-      const tdBarcode = document.createElement('td'); tdBarcode.textContent = it.barcode || '';
-      const tdName = document.createElement('td'); tdName.textContent = it.name || '';
-      const chkCell = document.createElement('td'); chkCell.style.textAlign='center'; chkCell.className='touch-check';
-      const chk = document.createElement('input'); chk.type='checkbox'; chk.dataset.id=it.id; chk.checked = !!it.checked; chk.addEventListener('change', ()=>{ it.checked = chk.checked; save(); });
-      chkCell.addEventListener('click',(e)=>{ if(e.target.tagName.toLowerCase()!=='input'){ chk.checked = !chk.checked; chk.dispatchEvent(new Event('change')); } });
-      chkCell.appendChild(chk);
-      const tdCost = document.createElement('td'); tdCost.textContent = formatNumber(it.cost);
-      const tdSell = document.createElement('td'); tdSell.textContent = formatNumber(it.sellPrice);
-      const tdSuggested = document.createElement('td'); tdSuggested.textContent = formatNumber(it.suggestedSellPrice);
-      const tdMarkup = document.createElement('td'); tdMarkup.textContent = formatNumber(it.markup);
-
-      tr.appendChild(tdCat); tr.appendChild(tdBarcode); tr.appendChild(tdName); tr.appendChild(chkCell); tr.appendChild(tdCost); tr.appendChild(tdSell); tr.appendChild(tdSuggested); tr.appendChild(tdMarkup);
-
-      tr.addEventListener('click', (e)=>{ if(e.target.tagName.toLowerCase() === 'input') return; selectedId = it.id; btnEditCost.disabled=false; btnEditItem.disabled=false; btnDelete.disabled=false; refreshTable(); });
-      productTableBody.appendChild(tr);
-    });
-  }
-
-  // Init after Google loaded
-  async function init(){
-    loadCats(); load(); renderCategoryOptions(); bindEvents(); refreshTable(); populateSavedLists(); renderCategoriesTable();
-    updateDriveUI();
-
-    // initialize gapi client now that gapi is available (if keys present)
-    if(!GOOGLE_API_KEY || !GOOGLE_CLIENT_ID || GOOGLE_API_KEY.includes('REPLACE') || GOOGLE_CLIENT_ID.includes('REPLACE')){
-      console.warn('Google API key / client ID not set. Drive features are disabled until you add them.');
-      driveStatus.textContent = 'Drive: Keys not set';
-      return;
-    }
-
-    try{
-      // initialize gapi
-      await gapi.load('client', async ()=>{ // waits for client library
-        try{
-          await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] });
-          gapiInited = true;
-          driveStatus.textContent = 'Drive: gapi ready';
-        }catch(err){
-          console.warn('gapi init error', err);
-          driveStatus.textContent = 'Drive: gapi init error';
-        }
-      });
-    }catch(e){
-      console.warn('gapi failed to load or init', e);
-      driveStatus.textContent = 'Drive: gapi load failed';
-    }
-
-    // load GIS (Identity Services) script dynamically if not present
-    if(typeof google === 'undefined' || typeof google.accounts === 'undefined'){
-      if(!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')){
-        const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client';
-        s.onload = ()=>{ gisLoaded = true; driveStatus.textContent = 'Drive: GIS loaded'; setupTokenClient(); };
-        s.onerror = ()=>{ console.warn('Failed to load GIS script'); driveStatus.textContent = 'Drive: GIS failed to load'; };
-        document.head.appendChild(s);
-      } else {
-        gisLoaded = true; setupTokenClient();
-      }
-    } else {
-      gisLoaded = true; setupTokenClient();
-    }
-  }
-
-  function updateDriveUI(){
-    const disabled = !GOOGLE_API_KEY || !GOOGLE_CLIENT_ID || GOOGLE_API_KEY.includes('REPLACE') || GOOGLE_CLIENT_ID.includes('REPLACE');
-    btnImportDrive.disabled = disabled;
-    btnExportDrive.disabled = disabled;
-    if(disabled) driveStatus.textContent = 'Drive: Keys not set';
-  }
-
-  function setupTokenClient(){
-    if(!gisLoaded) return;
-    if(typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) return;
-    tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
-      callback: (resp) => {
-        if(resp.error){
-          console.error('Token error', resp);
-          driveStatus.textContent = 'Drive: Token error';
-          return;
-        }
-        accessToken = resp.access_token;
-        if(gapiInited) gapi.client.setToken({access_token: accessToken});
-        driveStatus.textContent = 'Drive: Signed in';
-        // after sign-in we can optionally list or update
-      }
-    });
-    driveStatus.textContent = 'Drive: Token client ready';
-  }
-
-  // Category helpers
-  function renderCategoryOptions(selected){ itemCategory.innerHTML=''; const optNew = document.createElement('option'); optNew.value='__add_new__'; optNew.textContent='➕ Add New Category'; itemCategory.appendChild(optNew); categories.forEach(c=>{ const o = document.createElement('option'); o.value=c; o.textContent=c; itemCategory.appendChild(o); }); if(selected) itemCategory.value = selected; else if(categories.length) itemCategory.selectedIndex = 1; else itemCategory.selectedIndex = 0; }
-  function addCategory(name){ if(!name) return; if(!categories.includes(name)){ categories.push(name); saveCats(); renderCategoryOptions(name); renderCategoriesTable(); } }
-  function renderCategoriesTable(){ categoriesTableBody.innerHTML=''; categories.forEach((c,i)=>{ const tr = document.createElement('tr'); tr.innerHTML = `<td>${escapeHtml(c)}</td><td><button data-i="${i}" class="edit-cat">Edit</button> <button data-i="${i}" class="del-cat">Delete</button></td>`; categoriesTableBody.appendChild(tr); }); categoriesTableBody.querySelectorAll('.edit-cat').forEach(btn=>btn.addEventListener('click', ()=>{ const i=Number(btn.dataset.i); const newName = prompt('Edit category', categories[i]); if(newName && newName.trim()){ const old = categories[i]; categories[i]=newName.trim(); saveCats(); renderCategoryOptions(); renderCategoriesTable(); } })); categoriesTableBody.querySelectorAll('.del-cat').forEach(btn=>btn.addEventListener('click', ()=>{ const i=Number(btn.dataset.i); if(!confirm('Delete category and remove from products?')) return; const name = categories[i]; categories.splice(i,1); products.forEach(p=>{ if(p.category===name) p.category=''; }); saveCats(); save(); renderCategoryOptions(); renderCategoriesTable(); refreshTable(); })); }
-
-  // Events
-  function bindEvents(){ document.querySelectorAll('th.sortable').forEach(th=>th.addEventListener('click', ()=>{ const key = th.dataset.key; if(sortState.key===key) sortState.asc=!sortState.asc; else {sortState.key=key; sortState.asc=true} refreshTable(); })); searchInput.addEventListener('input', ()=>refreshTable()); rowsPerPage.addEventListener('change', ()=>refreshTable());
-
-// 🔹 Auto-select all text in search box when Enter is pressed
-searchInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault(); // prevent form submit / new line
-    searchInput.select(); // highlight all text
-  }
-});
-
-
-    btnAdd.addEventListener('click', ()=>openItemModal('add'));
-    itemCancel.addEventListener('click', ()=>closeModal(modalItem)); itemSave.addEventListener('click', saveItemFromModal);
-    itemCategory.addEventListener('change', ()=>{ if(itemCategory.value==='__add_new__'){ const n = prompt('New category name:'); if(n && n.trim()){ addCategory(n.trim()); } else { renderCategoryOptions(); } } });
-    [itemPacks,itemPcsPerPack,itemCostPerPack].forEach(el=>el.addEventListener('input', ()=>{ itemCost.value = computeCost(itemPacks.value,itemPcsPerPack.value,itemCostPerPack.value).toFixed(4); }));
-
-    btnEditItem.addEventListener('click', ()=>{ if(!selectedId) return; openItemModal('edit'); });
-    btnEditCost.addEventListener('click', ()=>{ if(!selectedId) return; openEditCostModal(); });
-    editCancel.addEventListener('click', ()=>closeModal(modalEditCost)); editSave.addEventListener('click', saveEditedCost);
-    [editPacks,editPcsPerPack,editCostPerPack].forEach(el=>el.addEventListener('input', ()=>{ editCost.value = computeCost(editPacks.value,editPcsPerPack.value,editCostPerPack.value).toFixed(4); }));
-
-    btnUncheck.addEventListener('click', ()=>{ if(!confirm('Uncheck ALL items?')) return; products.forEach(p=>p.checked=false); save(); refreshTable(); });
-
-    btnImportLocal.addEventListener('click', ()=>fileInputLocal.click()); fileInputLocal.addEventListener('change', handleFileImportLocal);
-    btnExportLocal.addEventListener('click', exportCSVLocal);
-
-    btnImportDrive.addEventListener('click', importFromDrive);
-    btnExportDrive.addEventListener('click', exportToDrive);
-
-    btnCategories.addEventListener('click', ()=>showView('categories'));
-    btnBackFromCategories.addEventListener('click', ()=>showView('product'));
-    btnAddCategory.addEventListener('click', ()=>{ const n = prompt('New category name:'); if(n && n.trim()){ addCategory(n.trim()) } });
-    btnExportCategories.addEventListener('click', exportCategoriesCSV);
-    btnImportCategories.addEventListener('click', ()=>fileInputCats.click()); fileInputCats.addEventListener('change', handleCategoriesImport);
-
-    btnGoPurchase.addEventListener('click', ()=>showView('purchase'));
-    btnBack.addEventListener('click', ()=>showView('product'));
-    btnPrint.addEventListener('click', ()=>window.print());
-
-    btnSavePurchase.addEventListener('click', savePurchaseList); btnLoadPurchase.addEventListener('click', loadSelectedPurchaseList);
-
-    document.addEventListener('keydown', (e)=>{ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='e'){ e.preventDefault(); exportCSVLocal(); } }); }
-
-  // Modal helpers
-  function showModal(el){ el.style.display='flex'; }
-  function closeModal(el){ el.style.display='none'; }
-
-  // Open add/edit item modal
-  function openItemModal(mode){ renderCategoryOptions(); if(mode==='add'){ modalItemTitle.textContent='Add Item'; itemCategory.value = categories.length? categories[0] : '__add_new__'; itemBarcode.value=''; itemName.value=''; itemPacks.value=1; itemPcsPerPack.value=1; itemCostPerPack.value=1; itemCost.value = computeCost(1,1,1).toFixed(4); itemSellPrice.value = 0; itemSave.dataset.mode='add'; showModal(modalItem); } else { const p = products.find(x=>x.id===selectedId); if(!p) return; modalItemTitle.textContent='Edit Item'; renderCategoryOptions(p.category); itemCategory.value = p.category || (categories[0]||''); itemBarcode.value = p.barcode||''; itemName.value = p.name||''; itemPacks.value = p.packs||1; itemPcsPerPack.value = p.pcsPerPack||1; itemCostPerPack.value = p.costPerPack||1; itemCost.value = computeCost(itemPacks.value,itemPcsPerPack.value,itemCostPerPack.value).toFixed(4); itemSellPrice.value = p.sellPrice||0; itemSave.dataset.mode='edit'; showModal(modalItem); } }
-
-  // Save item from modal (add/edit)
-  function saveItemFromModal(){ const mode = itemSave.dataset.mode||'add'; const cat = itemCategory.value==='__add_new__'? prompt('New category name:') : itemCategory.value; if(cat==='__add_new__' || !cat){ alert('Please choose or add a category.'); return; } if(!categories.includes(cat)) addCategory(cat); const barcode = itemBarcode.value.trim(); const name = itemName.value.trim(); const packs = Number(itemPacks.value)||0; const pcs = Number(itemPcsPerPack.value)||0; const cpp = Number(itemCostPerPack.value)||0; const sell = Number(itemSellPrice.value)||0; const costVal = computeCost(packs,pcs,cpp); if(mode==='add'){ const it = {id:uid(), category:cat, barcode:barcode, name:name, packs:packs, pcsPerPack:pcs, costPerPack:cpp, cost:costVal, sellPrice:sell, suggestedSellPrice:computeSuggested(costVal), markup:computeMarkup(sell,costVal), checked:false, notes:''}; products.push(it); } else { const p = products.find(x=>x.id===selectedId); if(!p) return; p.category=cat; p.barcode=barcode; p.name=name; p.packs=packs; p.pcsPerPack=pcs; p.costPerPack=cpp; p.cost=costVal; p.sellPrice=sell; p.suggestedSellPrice=computeSuggested(costVal); p.markup=computeMarkup(sell,costVal); } save(); closeModal(modalItem); refreshTable(); renderCategoriesTable(); }
-
-  // Edit Cost modal
-  function openEditCostModal(){ const p = products.find(x=>x.id===selectedId); if(!p) return; editPacks.value = p.packs||0; editPcsPerPack.value = p.pcsPerPack||1; editCostPerPack.value = p.costPerPack||1; editCost.value = computeCost(editPacks.value,editPcsPerPack.value,editCostPerPack.value).toFixed(4); showModal(modalEditCost); }
-  function saveEditedCost(){ const p = products.find(x=>x.id===selectedId); if(!p) return; const packs = Number(editPacks.value)||0; const pcs = Number(editPcsPerPack.value)||0; const cpp = Number(editCostPerPack.value)||0; const costVal = computeCost(packs,pcs,cpp); p.packs=packs; p.pcsPerPack=pcs; p.costPerPack=cpp; p.cost=costVal; p.suggestedSellPrice=computeSuggested(costVal); p.markup=computeMarkup(p.sellPrice||0,costVal); save(); closeModal(modalEditCost); refreshTable(); }
-
-  // Local CSV import/export
-  function parseCSV(text){ const lines = text.split(/\r?\n/).filter(l=>l.trim().length>0); if(lines.length===0) return []; const headers = lines[0].split(',').map(h=>h.trim().toLowerCase()); const rows = lines.slice(1).map(line=>{ const cols = line.split(','); const obj = {}; headers.forEach((h,i)=>obj[h]= (cols[i]||'').trim()); return obj; }); return rows; }
-
-  function handleFileImportLocal(e){ const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = function(){ try{ const rows = parseCSV(r.result); rows.forEach(rw=>{ const packs = Number(rw.packs)||0; const pcs = Number(rw.pcsperpack)||0; const cpp = Number(rw.costperpack)||0; const costVal = computeCost(packs,pcs,cpp); const sell = Number(rw.sellprice)||0; const cat = rw.category || ''; if(cat && !categories.includes(cat)) addCategory(cat); const item = {id:uid(), category:cat, barcode:rw.barcode||'', name:rw.name||'', packs:packs, pcsPerPack:pcs, costPerPack:cpp, cost:costVal, sellPrice:sell, suggestedSellPrice:computeSuggested(costVal), markup:computeMarkup(sell,costVal), checked: (String(rw.checked||'').toLowerCase()==='true'), notes: rw.notes||''}; products.push(item); }); save(); refreshTable(); populateSavedLists(); renderCategoriesTable(); alert('Import completed: '+rows.length+' rows appended.'); }catch(err){ alert('Import error: '+err.message); } } ; r.readAsText(f); }
-
-  function exportCSVLocal(){ const hdr = ['category','barcode','name','packs','pcsperpack','costperpack','cost','sellprice','suggestedsellprice','markup','checked','notes']; const lines=[hdr.join(',')]; products.forEach(p=>{ const cols=[p.category,p.barcode,p.name,p.packs,p.pcsPerPack,p.costPerPack,p.cost,p.sellPrice,p.suggestedSellPrice,p.markup,p.checked,p.notes]; lines.push(cols.map(c=>String(c).replace(/,/g,'')).join(',')); }); const blob = new Blob([lines.join('\n')],{type:'text/csv'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='mattmat_products_v3.csv'; a.click(); URL.revokeObjectURL(url); }
-
-  // Categories import/export
-  function exportCategoriesCSV(){ const hdr=['category']; const lines=[hdr.join(',')]; categories.forEach(c=>lines.push([c].join(','))); const blob = new Blob([lines.join('\n')],{type:'text/csv'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='mattmat_categories_v3.csv'; a.click(); URL.revokeObjectURL(url); }
-  function handleCategoriesImport(e){ const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = function(){ try{ const rows = parseCSV(r.result); rows.forEach(rw=>{ const name = rw.category || rw.name || ''; if(name && !categories.includes(name)) categories.push(name); }); saveCats(); renderCategoryOptions(); renderCategoriesTable(); alert('Imported categories: '+rows.length); }catch(err){ alert('Categories import error: '+err.message); } }; r.readAsText(f); }
-
-  // Purchase List: single unified table sorted by Category -> Item Name
-  function renderPurchaseTable(){ purchaseContainer.innerHTML = ''; const checked = products.filter(p=>p.checked); if(checked.length===0){ purchaseContainer.innerHTML='<div class="note">No items selected for purchase.</div>'; return; }
-    checked.sort((a,b)=>{ const A=(a.category||'').toLowerCase()+ '|' + (a.name||'').toLowerCase(); const B=(b.category||'').toLowerCase()+ '|' + (b.name||'').toLowerCase(); if(A<B) return -1; if(A>B) return 1; return 0; });
-    const table = document.createElement('table'); table.id='purchaseTable'; const thead = document.createElement('thead'); thead.innerHTML = '<tr><th></th><th>Category</th><th>Item Name</th><th>Cost Per Pack</th><th>Notes</th></tr>';
-    const tbody = document.createElement('tbody');
-    checked.forEach(it=>{
-      const tr = document.createElement('tr'); tr.dataset.barcode = it.barcode || it.id;
-      const tdBlank = document.createElement('td'); tdBlank.style.width='36px';
-      const tdCat = document.createElement('td'); tdCat.textContent = it.category || '';
-      const tdName = document.createElement('td'); tdName.textContent = it.name || '';
-      const tdCost = document.createElement('td'); tdCost.textContent = formatNumber(it.costPerPack || it.cost);
-      const tdNotes = document.createElement('td'); tdNotes.className='notes-td';
-      const ta = document.createElement('textarea'); ta.className='note-input'; ta.dataset.barcode = it.barcode || it.id; ta.value = it.notes || ''; ta.addEventListener('input', ()=>{ const p = products.find(x=> (x.barcode||x.id) == ta.dataset.barcode); if(p){ p.notes = ta.value; save(); } });
-      const span = document.createElement('div'); span.className='note-print'; span.textContent = it.notes || '';
-      tdNotes.appendChild(ta); tdNotes.appendChild(span);
-      tr.appendChild(tdBlank); tr.appendChild(tdCat); tr.appendChild(tdName); tr.appendChild(tdCost); tr.appendChild(tdNotes);
-      tbody.appendChild(tr);
-    }); table.appendChild(thead); table.appendChild(tbody); purchaseContainer.appendChild(table);
-  }
-
-  function savePurchaseList(){ const name = prompt('Enter a name for this purchase list:'); if(!name) return; const selected = products.filter(p=>p.checked).map(p=>({barcode:p.barcode||p.id, notes:p.notes||''})); if(selected.length===0){ alert('No items selected to save.'); return; } const lists = loadSavedLists(); lists.push({name:name, items:selected, created: Date.now()}); saveSavedLists(lists); populateSavedLists(); alert('Purchase list saved.'); }
-  function populateSavedLists(){ const lists = loadSavedLists(); savedListsSelect.innerHTML = ''; lists.forEach((l,i)=>{ const opt = document.createElement('option'); opt.value=i; opt.textContent = l.name + ' ('+ new Date(l.created).toLocaleString()+')'; savedListsSelect.appendChild(opt); }); if(lists.length===0){ const opt = document.createElement('option'); opt.value=''; opt.textContent='-- no saved lists --'; savedListsSelect.appendChild(opt); } }
-  function loadSelectedPurchaseList(){ const idx = savedListsSelect.value; if(idx===''){ alert('No saved list selected.'); return; } const lists = loadSavedLists(); const sel = lists[Number(idx)]; if(!sel) return; products.forEach(p=> p.checked = false); sel.items.forEach(it=>{ const p = products.find(x=> (x.barcode||x.id) == it.barcode); if(p){ p.checked = true; p.notes = it.notes || p.notes; } }); save(); refreshTable(); showView('purchase'); renderPurchaseTable(); alert('Loaded saved purchase list: '+sel.name); }
-
-  // View switching
-  function showView(which){ if(which==='purchase'){ productView.classList.remove('active'); categoriesView.classList.remove('active'); purchaseView.classList.add('active'); renderPurchaseTable(); } else if(which==='categories'){ productView.classList.remove('active'); purchaseView.classList.remove('active'); categoriesView.classList.add('active'); renderCategoriesTable(); } else { purchaseView.classList.remove('active'); categoriesView.classList.remove('active'); productView.classList.add('active'); } }
-
-  // Google Drive integration: helpers
-  async function importFromDrive(){
-    if(!gapiInited){ return alert('Google API not ready.'); }
-    try{
-      if(!accessToken){ await requestAccessToken(); }
-      // list CSV files
-      const res = await gapi.client.drive.files.list({ q: `mimeType='text/csv' or name contains '.csv'`, pageSize: 50, fields: 'files(id,name,createdTime)'});
-      const files = res.result.files || [];
-      if(files.length===0) return alert('No CSV files found in your Drive.');
-      const nameList = files.map((f,i)=>`${i+1}. ${f.name}`).join('\n');
-      const choice = prompt('Choose file number to import from Drive:\n' + nameList); if(!choice) return;
-      const idx = Number(choice)-1; if(isNaN(idx) || idx<0 || idx>=files.length) return alert('Invalid selection');
-      const fileId = files[idx].id;
-      // fetch file contents
-      const res2 = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
-      const csv = res2.body || res2.result;
-      const rows = parseCSV(csv);
-      rows.forEach(rw=>{ const packs = Number(rw.packs)||0; const pcs = Number(rw.pcsperpack)||0; const cpp = Number(rw.costperpack)||0; const costVal = computeCost(packs,pcs,cpp); const sell = Number(rw.sellprice)||0; const cat = rw.category || ''; if(cat && !categories.includes(cat)) addCategory(cat); const item = {id:uid(), category:cat, barcode:rw.barcode||'', name:rw.name||'', packs:packs, pcsPerPack:pcs, costPerPack:cpp, cost:costVal, sellPrice:sell, suggestedSellPrice:computeSuggested(costVal), markup:computeMarkup(sell,costVal), checked: (String(rw.checked||'').toLowerCase()==='true'), notes: rw.notes||''}; products.push(item); });
-      save(); refreshTable(); populateSavedLists(); renderCategoriesTable(); alert('Imported '+rows.length+' rows from Drive');
-    }catch(err){ console.error(err); alert('Drive import error: '+ (err.message||err.statusText || err)); }
-  }
-
-  async function exportToDrive(){
-    if(!gapiInited){ return alert('Google API not ready.'); }
-    try{
-      if(!accessToken) await requestAccessToken();
-      const csv = buildCSVString();
-      // check existing file
-      const list = await gapi.client.drive.files.list({ q: `name='${APP_DRIVE_FILENAME.replace(/'/g,"\\'")}'`, fields: 'files(id,name)'});
-      const files = list.result.files || [];
-      if(files.length>0){
-        const fileId = files[0].id;
-        // update (PATCH)
-        const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, { method:'PATCH', headers:{ Authorization: 'Bearer ' + accessToken, 'Content-Type':'text/csv' }, body: csv });
-        if(res.ok) alert('Backup updated on Google Drive');
-        else {
-          const text = await res.text();
-          alert('Drive update failed: '+res.statusText+' '+text);
-        }
-      } else {
-        // create new file via multipart upload
-        const metadata = { name: APP_DRIVE_FILENAME, mimeType: 'text/csv' };
-        const form = new FormData();
-        form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
-        form.append('file', new Blob([csv], {type:'text/csv'}));
-        const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', { method:'POST', headers:{ Authorization: 'Bearer ' + accessToken }, body: form });
-        if(res.ok) alert('Backup saved to Google Drive');
-        else {
-          const text = await res.text();
-          alert('Drive upload failed: '+res.statusText+' '+text);
-        }
-      }
-    }catch(err){ console.error(err); alert('Drive export error: '+ (err.message||err.statusText || err)); }
-  }
-
-  function buildCSVString(){ const hdr = ['category','barcode','name','packs','pcsperpack','costperpack','cost','sellprice','suggestedsellprice','markup','checked','notes']; const lines=[hdr.join(',')]; products.forEach(p=>{ const cols=[p.category,p.barcode,p.name,p.packs,p.pcsPerPack,p.costPerPack,p.cost,p.sellPrice,p.suggestedSellPrice,p.markup,p.checked,p.notes]; lines.push(cols.map(c=>String(c).replace(/,/g,'')).join(',')); }); return lines.join('\n'); }
-
-  function requestAccessToken(){ return new Promise((resolve,reject)=>{ if(!tokenClient) return reject(new Error('Token client not initialized')); tokenClient.requestAccessToken({ prompt: 'consent' , callback: (resp)=>{ if(resp.error) return reject(resp); accessToken = resp.access_token; if(gapiInited) gapi.client.setToken({access_token: accessToken}); driveStatus.textContent = 'Drive: Signed in'; resolve(resp); } }); }); }
-
-  // Init helper that waits for google scripts to be present (robust)
-  function loadIdentityScriptAndStart(){
-    if(typeof google !== 'undefined' && typeof gapi !== 'undefined'){
-      // both exist, start app
-      init();
-      return;
-    }
-    // insert the identity script if not present
-    if(!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')){
-      const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.onload = ()=>{ console.log('GIS loaded'); if(typeof gapi !== 'undefined') init(); else setTimeout(loadIdentityScriptAndStart,200); };
-      s.onerror = ()=>{ console.warn('Failed to load GIS script'); };
-      document.head.appendChild(s);
-    }
-    // poll until both exist
-    const poll = setInterval(()=>{ if(typeof google !== 'undefined' && typeof gapi !== 'undefined'){ clearInterval(poll); init(); } }, 200);
-  }
-
-  // Start after window load (ensure gapi + GIS are ready)
-  window.addEventListener('load', ()=>{
-    updateDriveUI();
-    // Load both scripts if missing then start
-    function loadGoogleScripts() {
-      return new Promise((resolve) => {
-        let attempts = 0;
-        function checkReady() {
-          if (typeof gapi !== 'undefined' && typeof google !== 'undefined') {
-            resolve();
-          } else if (++attempts < 50) {
-            setTimeout(checkReady, 200);
-          } else {
-            alert('Google libraries failed to load. Check network or origin.');
-          }
-        }
-        if (!document.querySelector('script[src*="apis.google.com/js/api.js"]')) {
-          const gapiScript = document.createElement('script');
-          gapiScript.src = 'https://apis.google.com/js/api.js';
-          document.head.appendChild(gapiScript);
-        }
-        if (!document.querySelector('script[src*="accounts.google.com/gsi/client"]')) {
-          const gisScript = document.createElement('script');
-          gisScript.src = 'https://accounts.google.com/gsi/client';
-          document.head.appendChild(gisScript);
-        }
-        checkReady();
-      });
-    }
-    loadGoogleScripts().then(()=>{ console.log('Google libs ready'); init(); });
-  });
-
-  // Expose some functions for debugging
-  window._mattmat = { products, categories, exportToDrive, importFromDrive };
+const KEY='mattmat_products_v3_2_4',KEY_CATS='mattmat_categories_v3_2_4',KEY_REMARKS='mattmat_remarks_v3_2_4',KEY_SAVED_PURCHASES='mattmat_saved_purchase_lists_v3_2_4';
+const productTableBody=document.querySelector('#productTable tbody'),searchInput=document.getElementById('search'),btnAdd=document.getElementById('btnAdd'),btnDelete=document.getElementById('btnDelete'),btnEditItem=document.getElementById('btnEditItem'),btnEditCost=document.getElementById('btnEditCost'),btnUncheck=document.getElementById('btnUncheck'),btnImportLocal=document.getElementById('btnImportLocal'),btnExportLocal=document.getElementById('btnExportLocal'),btnImportDrive=document.getElementById('btnImportDrive'),btnExportDrive=document.getElementById('btnExportDrive'),btnCategories=document.getElementById('btnCategories'),btnGoPurchase=document.getElementById('btnGoPurchase'),productView=document.getElementById('productView'),purchaseView=document.getElementById('purchaseView'),categoriesView=document.getElementById('categoriesView'),btnBack=document.getElementById('btnBack'),btnPrint=document.getElementById('btnPrint'),purchaseContainer=document.getElementById('purchaseContainer'),savedListsSelect=document.getElementById('savedLists'),btnSavePurchase=document.getElementById('btnSavePurchase'),btnLoadPurchase=document.getElementById('btnLoadPurchase'),fileInputLocal=document.getElementById('fileInputLocal'),fileInputCats=document.getElementById('fileInputCats'),fileInputRemarks=document.getElementById('fileInputRemarks'),fileInputPurchase=document.getElementById('fileInputPurchase'),rowsPerPage=document.getElementById('rowsPerPage'),driveStatus=document.getElementById('driveStatus');
+const modalItem=document.getElementById('modalItem'),modalItemTitle=document.getElementById('modalItemTitle'),itemCategory=document.getElementById('itemCategory'),itemBarcode=document.getElementById('itemBarcode'),itemName=document.getElementById('itemName'),itemPacks=document.getElementById('itemPacks'),itemPcsPerPack=document.getElementById('itemPcsPerPack'),itemCostPerPack=document.getElementById('itemCostPerPack'),itemCost=document.getElementById('itemCost'),itemSellPrice=document.getElementById('itemSellPrice'),itemSuggested=document.getElementById('itemSuggested'),itemRemarks=document.getElementById('itemRemarks'),itemCancel=document.getElementById('itemCancel'),itemSave=document.getElementById('itemSave'),itemDelete=document.getElementById('itemDelete');
+const modalEditCost=document.getElementById('modalEditCost'),editPacks=document.getElementById('editPacks'),editPcsPerPack=document.getElementById('editPcsPerPack'),editCostPerPack=document.getElementById('editCostPerPack'),editCost=document.getElementById('editCost'),editCancel=document.getElementById('editCancel'),editSave=document.getElementById('editSave');
+const btnBackFromCategories=document.getElementById('btnBackFromCategories'),btnAddCategory=document.getElementById('btnAddCategory'),btnExportCategories=document.getElementById('btnExportCategories'),btnImportCategories=document.getElementById('btnImportCategories'),categoriesTableBody=document.querySelector('#categoriesTable tbody');
+const btnAddRemark=document.getElementById('btnAddRemark'),btnExportRemarks=document.getElementById('btnExportRemarks'),btnImportRemarks=document.getElementById('btnImportRemarks'),remarksTableBody=document.querySelector('#remarksTable tbody');
+const btnExportPurchase=document.getElementById('btnExportPurchase'),btnImportPurchase=document.getElementById('btnImportPurchase');
+let products=[],categories=[],remarks=[],selectedId=null,sortState={key:null,asc:true};
+let gapiInited=false,tokenClient=null,accessToken=null,gisLoaded=false;
+function uid(){return 'id_'+Math.random().toString(36).slice(2,9)}
+function save(){localStorage.setItem(KEY,JSON.stringify(products))}
+function load(){try{products=JSON.parse(localStorage.getItem(KEY))||[]}catch(e){products=[]}}
+function saveCats(){localStorage.setItem(KEY_CATS,JSON.stringify(categories))}
+function loadCats(){try{categories=JSON.parse(localStorage.getItem(KEY_CATS))||[]}catch(e){categories=[]}}
+function saveRemarks(){localStorage.setItem(KEY_REMARKS,JSON.stringify(remarks))}
+function loadRemarks(){try{remarks=JSON.parse(localStorage.getItem(KEY_REMARKS))||[]}catch(e){remarks=[]}}
+function saveSavedLists(lists){localStorage.setItem(KEY_SAVED_PURCHASES,JSON.stringify(lists))}
+function loadSavedLists(){try{return JSON.parse(localStorage.getItem(KEY_SAVED_PURCHASES))||[]}catch(e){return[]}}
+function computeCost(packs,pcsPerPack,costPerPack){packs=Number(packs)||0;pcsPerPack=Number(pcsPerPack)||0;costPerPack=Number(costPerPack)||0;if(packs*pcsPerPack===0)return 0;return costPerPack/(packs*pcsPerPack)}
+function computeSuggested(cost){return (Number(cost)||0)*1.2}
+function computeMarkup(sell,cost){return (Number(sell)||0)-(Number(cost)||0)}
+function formatNumber(v){if(v===undefined||v===null)return'';return (Number(v)||0).toFixed(2)}
+function escapeHtml(s){return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function ensureDefaultRemarks(){const defaults=['New','Fast Moving','Discontinued'];defaults.forEach(d=>{if(!remarks.includes(d))remarks.unshift(d)});saveRemarks();renderRemarksOptions();renderRemarksTable()}
+function refreshTable(){productTableBody.innerHTML='';let q=(searchInput.value||'').trim().toLowerCase();let rows=products.slice();if(sortState.key){rows.sort((a,b)=>{let A=a[sortState.key];let B=b[sortState.key];if(typeof A==='string')A=A.toLowerCase();if(typeof B==='string')B=B.toLowerCase();if(A<B)return sortState.asc?-1:1;if(A>B)return sortState.asc?1:-1;return 0})}if(q){rows=rows.filter(it=> (it.name||'').toLowerCase().includes(q) || (it.barcode||'').toLowerCase().includes(q) || (it.remarks||'').toLowerCase().includes(q))}const max=Number(rowsPerPage.value)||rows.length;rows.slice(0,max).forEach(it=>{const tr=document.createElement('tr');tr.dataset.id=it.id;if(it.id===selectedId)tr.classList.add('selected');const tdCat=document.createElement('td');tdCat.textContent=it.category||'';const tdBarcode=document.createElement('td');tdBarcode.textContent=it.barcode||'';const tdName=document.createElement('td');tdName.textContent=it.name||'';const tdBtn=document.createElement('td');tdBtn.style.textAlign='center';tdBtn.className='touch-check';const btn=document.createElement('button');btn.textContent=it.checked?'➖ Remove':'➕ Add';btn.title=it.checked?'Remove from purchase list':'Add to purchase list';btn.addEventListener('click',e=>{e.stopPropagation();it.checked=!it.checked;save();refreshTable()});tdBtn.appendChild(btn);const tdCost=document.createElement('td');tdCost.textContent=formatNumber(it.cost);const tdSell=document.createElement('td');tdSell.textContent=formatNumber(it.sellPrice);const tdSuggested=document.createElement('td');tdSuggested.textContent=formatNumber(it.suggestedSellPrice);const tdMarkup=document.createElement('td');tdMarkup.textContent=formatNumber(it.markup);const tdRemarks=document.createElement('td');tdRemarks.textContent=it.remarks||'';tr.appendChild(tdCat);tr.appendChild(tdBarcode);tr.appendChild(tdName);tr.appendChild(tdBtn);tr.appendChild(tdCost);tr.appendChild(tdSell);tr.appendChild(tdSuggested);tr.appendChild(tdMarkup);tr.appendChild(tdRemarks);tr.addEventListener('click',e=>{if(e.target.tagName.toLowerCase()==='button')return;selectedId=it.id;btnEditCost.disabled=false;btnEditItem.disabled=false;btnDelete.disabled=false;refreshTable()});productTableBody.appendChild(tr)})}
+async function init(){loadCats();loadRemarks();ensureDefaultRemarks();load();renderCategoryOptions();renderRemarksOptions();bindEvents();refreshTable();populateSavedLists();renderCategoriesTable();renderRemarksTable();updateDriveUI();if(!GOOGLE_API_KEY||!GOOGLE_CLIENT_ID||GOOGLE_API_KEY.includes('REPLACE')||GOOGLE_CLIENT_ID.includes('REPLACE')){driveStatus.textContent='Drive: Keys not set';return}try{await gapi.load('client',async()=>{try{await gapi.client.init({apiKey:GOOGLE_API_KEY,discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']});gapiInited=true;driveStatus.textContent='Drive: gapi ready'}catch(err){console.warn('gapi init error',err);driveStatus.textContent='Drive: gapi init error'}})}catch(e){console.warn('gapi failed',e);driveStatus.textContent='Drive: gapi load failed'}if(typeof google==='undefined'||typeof google.accounts==='undefined'){if(!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')){const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=()=>{gisLoaded=true;driveStatus.textContent='Drive: GIS loaded';setupTokenClient()};s.onerror=()=>{console.warn('Failed to load GIS script')};document.head.appendChild(s)}else{gisLoaded=true;setupTokenClient()} }else{gisLoaded=true;setupTokenClient()} }
+function updateDriveUI(){const disabled=!GOOGLE_API_KEY||!GOOGLE_CLIENT_ID||GOOGLE_API_KEY.includes('REPLACE')||GOOGLE_CLIENT_ID.includes('REPLACE');btnImportDrive.disabled=disabled;btnExportDrive.disabled=disabled;if(disabled)driveStatus.textContent='Drive: Keys not set'}
+function setupTokenClient(){if(!gisLoaded)return;if(typeof google==='undefined'||!google.accounts||!google.accounts.oauth2)return;tokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID,scope:'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',callback:resp=>{if(resp.error){console.error('Token error',resp);driveStatus.textContent='Drive: Token error';return}accessToken=resp.access_token;if(gapiInited)gapi.client.setToken({access_token:accessToken});driveStatus.textContent='Drive: Signed in'}});driveStatus.textContent='Drive: Token client ready'}
+function renderCategoryOptions(selected){itemCategory.innerHTML='';const optNew=document.createElement('option');optNew.value='__add_new__';optNew.textContent='➕ Add New Category';itemCategory.appendChild(optNew);categories.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;itemCategory.appendChild(o)});if(selected)itemCategory.value=selected;else if(categories.length)itemCategory.selectedIndex=1;else itemCategory.selectedIndex=0}
+function renderRemarksOptions(selected){itemRemarks.innerHTML='';const optNew=document.createElement('option');optNew.value='__add_new__';optNew.textContent='➕ Add New Remark';itemRemarks.appendChild(optNew);remarks.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;itemRemarks.appendChild(o)});if(selected)itemRemarks.value=selected;else if(remarks.includes('New'))itemRemarks.value='New';else if(remarks.length)itemRemarks.selectedIndex=1;else itemRemarks.selectedIndex=0}
+function addCategory(name){if(!name)return;if(!categories.includes(name)){categories.push(name);saveCats();renderCategoryOptions(name);renderCategoriesTable()}}
+function addRemark(name){if(!name)return;if(!remarks.includes(name)){remarks.push(name);saveRemarks();renderRemarksOptions(name);renderRemarksTable()}}
+function renderCategoriesTable(){categoriesTableBody.innerHTML='';categories.forEach((c,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${escapeHtml(c)}</td><td><button data-i="${i}" class="edit-cat">Edit</button> <button data-i="${i}" class="del-cat">Delete</button></td>`;categoriesTableBody.appendChild(tr)});categoriesTableBody.querySelectorAll('.edit-cat').forEach(btn=>btn.addEventListener('click',()=>{const i=Number(btn.dataset.i);const newName=prompt('Edit category',categories[i]);if(newName&&newName.trim()){categories[i]=newName.trim();saveCats();renderCategoryOptions();renderCategoriesTable()}}));categoriesTableBody.querySelectorAll('.del-cat').forEach(btn=>btn.addEventListener('click',()=>{const i=Number(btn.dataset.i);if(!confirm('Delete category and remove from products?'))return;const name=categories[i];categories.splice(i,1);products.forEach(p=>{if(p.category===name)p.category=''});saveCats();save();renderCategoryOptions();renderCategoriesTable();refreshTable()}))}
+function renderRemarksTable(){remarksTableBody.innerHTML='';remarks.forEach((r,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${escapeHtml(r)}</td><td><button data-i="${i}" class="edit-remark">Edit</button> <button data-i="${i}" class="del-remark">Delete</button></td>`;remarksTableBody.appendChild(tr)});remarksTableBody.querySelectorAll('.edit-remark').forEach(btn=>btn.addEventListener('click',()=>{const i=Number(btn.dataset.i);const newName=prompt('Edit remark',remarks[i]);if(newName&&newName.trim()){remarks[i]=newName.trim();saveRemarks();renderRemarksOptions();renderRemarksTable()}}));remarksTableBody.querySelectorAll('.del-remark').forEach(btn=>btn.addEventListener('click',()=>{const i=Number(btn.dataset.i);if(!confirm('Delete remark?'))return;const name=remarks[i];remarks.splice(i,1);products.forEach(p=>{if(p.remarks===name)p.remarks=''});saveRemarks();save();renderRemarksOptions();renderRemarksTable();refreshTable()}))}
+function bindEvents(){document.querySelectorAll('th.sortable').forEach(th=>th.addEventListener('click',()=>{const key=th.dataset.key;if(sortState.key===key)sortState.asc=!sortState.asc;else{sortState.key=key;sortState.asc=true}refreshTable()}));searchInput.addEventListener('input',()=>refreshTable());rowsPerPage.addEventListener('change',()=>refreshTable());searchInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();searchInput.select()}});btnAdd.addEventListener('click',()=>openItemModal('add'));itemCancel.addEventListener('click',()=>closeModal(modalItem));itemSave.addEventListener('click',saveItemFromModal);itemDelete.addEventListener('click',deleteItemFromModal);itemCategory.addEventListener('change',()=>{if(itemCategory.value==='__add_new__'){const n=prompt('New category name:');if(n&&n.trim()){addCategory(n.trim())}else{renderCategoryOptions()}}});itemRemarks.addEventListener('change',()=>{if(itemRemarks.value==='__add_new__'){const n=prompt('New remark:');if(n&&n.trim()){addRemark(n.trim())}else{renderRemarksOptions()}}});[itemPacks,itemPcsPerPack,itemCostPerPack].forEach(el=>el.addEventListener('input',()=>{const costVal=computeCost(itemPacks.value,itemPcsPerPack.value,itemCostPerPack.value);itemCost.value=costVal.toFixed(4);itemSuggested.value=computeSuggested(costVal).toFixed(4)}));btnEditItem.addEventListener('click',()=>{if(!selectedId)return;openItemModal('edit')});btnEditCost.addEventListener('click',()=>{if(!selectedId)return;openEditCostModal()});editCancel.addEventListener('click',()=>closeModal(modalEditCost));editSave.addEventListener('click',saveEditedCost);[editPacks,editPcsPerPack,editCostPerPack].forEach(el=>el.addEventListener('input',()=>{editCost.value=computeCost(editPacks.value,editPcsPerPack.value,editCostPerPack.value).toFixed(4)}));btnUncheck.addEventListener('click',()=>{if(!confirm('Uncheck ALL items?'))return;products.forEach(p=>p.checked=false);save();refreshTable()});btnImportLocal.addEventListener('click',()=>fileInputLocal.click());fileInputLocal.addEventListener('change',handleFileImportLocal);btnExportLocal.addEventListener('click',exportCSVLocal);btnImportDrive.addEventListener('click',importFromDrive);btnExportDrive.addEventListener('click',exportToDrive);btnCategories.addEventListener('click',()=>showView('categories'));btnBackFromCategories.addEventListener('click',()=>showView('product'));btnAddCategory.addEventListener('click',()=>{const n=prompt('New category name:');if(n&&n.trim()){addCategory(n.trim())}});btnExportCategories.addEventListener('click',exportCategoriesCSV);btnImportCategories.addEventListener('click',()=>fileInputCats.click());fileInputCats.addEventListener('change',handleCategoriesImport);btnAddRemark.addEventListener('click',()=>{const n=prompt('New remark:');if(n&&n.trim()){addRemark(n.trim())}});btnExportRemarks.addEventListener('click',exportRemarksCSV);btnImportRemarks.addEventListener('click',()=>fileInputRemarks.click());fileInputRemarks.addEventListener('change',handleRemarksImport);btnGoPurchase.addEventListener('click',()=>showView('purchase'));btnBack.addEventListener('click',()=>showView('product'));btnPrint.addEventListener('click',()=>{autoSaveAndPrint()});btnSavePurchase.addEventListener('click',savePurchaseList);btnLoadPurchase.addEventListener('click',loadSelectedPurchaseList);btnExportPurchase.addEventListener('click',exportPurchaseListsCSV);btnImportPurchase.addEventListener('click',()=>fileInputPurchase.click());fileInputPurchase.addEventListener('change',handlePurchaseListsImport);document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='e'){e.preventDefault();exportCSVLocal()}})}
+function showModal(el){el.style.display='flex'}function closeModal(el){el.style.display='none'}
+function openItemModal(mode){renderCategoryOptions();renderRemarksOptions();if(mode==='add'){modalItemTitle.textContent='Add Item';itemCategory.value=categories.length?categories[0]:'__add_new__';itemBarcode.value='';itemName.value='';itemPacks.value=1;itemPcsPerPack.value=1;itemCostPerPack.value=1;const costVal=computeCost(1,1,1);itemCost.value=costVal.toFixed(4);itemSuggested.value=computeSuggested(costVal).toFixed(4);itemSellPrice.value=0; if(!remarks.includes('New')){remarks.unshift('New');saveRemarks();renderRemarksOptions()}itemRemarks.value='New';itemSave.dataset.mode='add';itemDelete.style.display='none';showModal(modalItem);}else{const p=products.find(x=>x.id===selectedId);if(!p)return;modalItemTitle.textContent='Edit Item';renderCategoryOptions(p.category);renderRemarksOptions(p.remarks);itemCategory.value=p.category||(categories[0]||'');itemBarcode.value=p.barcode||'';itemName.value=p.name||'';itemPacks.value=p.packs||1;itemPcsPerPack.value=p.pcsPerPack||1;itemCostPerPack.value=p.costPerPack||1;const costVal=computeCost(itemPacks.value,itemPcsPerPack.value,itemCostPerPack.value);itemCost.value=costVal.toFixed(4);itemSuggested.value=computeSuggested(costVal).toFixed(4);itemSellPrice.value=p.sellPrice||0;itemRemarks.value=p.remarks||'';itemSave.dataset.mode='edit';itemDelete.style.display='inline-block';showModal(modalItem);}}
+function saveItemFromModal(){const mode=itemSave.dataset.mode||'add';const cat=itemCategory.value==='__add_new__'?prompt('New category name:'):itemCategory.value;if(cat==='__add_new__'||!cat){alert('Please choose or add a category.');return}if(!categories.includes(cat))addCategory(cat);let remarkVal=itemRemarks.value==='__add_new__'?prompt('New remark:'):itemRemarks.value; if(remarkVal==='__add_new__'||remarkVal===null){} else if(remarkVal&& !remarks.includes(remarkVal)) addRemark(remarkVal); const finalRemark=(remarkVal && remarkVal!=='__add_new__')?remarkVal:(itemRemarks.value && itemRemarks.value!=='__add_new__'?itemRemarks.value:''); const barcode=itemBarcode.value.trim();const name=itemName.value.trim();const packs=Number(itemPacks.value)||0;const pcs=Number(itemPcsPerPack.value)||0;const cpp=Number(itemCostPerPack.value)||0;const sell=Number(itemSellPrice.value)||0;const costVal=computeCost(packs,pcs,cpp);const suggested=computeSuggested(costVal); if(mode==='add'){const it={id:uid(),category:cat,barcode:barcode,name:name,packs:packs,pcsPerPack:pcs,costPerPack:cpp,cost:costVal,sellPrice:sell,suggestedSellPrice:suggested,markup:computeMarkup(sell,costVal),checked:false,notes:'',remarks:finalRemark||''};products.push(it);}else{const p=products.find(x=>x.id===selectedId);if(!p)return;p.category=cat;p.barcode=barcode;p.name=name;p.packs=packs;p.pcsPerPack=pcs;p.costPerPack=cpp;p.cost=costVal;p.sellPrice=sell;p.suggestedSellPrice=suggested;p.markup=computeMarkup(sell,costVal);p.remarks=finalRemark||'';}save();closeModal(modalItem);selectedId=null;btnEditItem.disabled=true;btnEditCost.disabled=true;btnDelete.disabled=true;refreshTable();renderCategoriesTable();renderRemarksTable()}
+function deleteItemFromModal(){if(!selectedId)return; if(!confirm('Are you sure you want to delete this item?')) return; const idx=products.findIndex(p=>p.id===selectedId); if(idx===-1){alert('Item not found');return} products.splice(idx,1);save();closeModal(modalItem);selectedId=null;btnEditItem.disabled=true;btnEditCost.disabled=true;btnDelete.disabled=true;refreshTable();renderCategoriesTable();renderRemarksTable();alert('Item deleted.')}
+function openEditCostModal(){const p=products.find(x=>x.id===selectedId);if(!p)return;editPacks.value=p.packs||0;editPcsPerPack.value=p.pcsPerPack||1;editCostPerPack.value=p.costPerPack||1;editCost.value=computeCost(editPacks.value,editPcsPerPack.value,editCostPerPack.value).toFixed(4);showModal(modalEditCost)}
+function saveEditedCost(){const p=products.find(x=>x.id===selectedId);if(!p)return;const packs=Number(editPacks.value)||0;const pcs=Number(editPcsPerPack.value)||0;const cpp=Number(editCostPerPack.value)||0;const costVal=computeCost(packs,pcs,cpp);p.packs=packs;p.pcsPerPack=pcs;p.costPerPack=cpp;p.cost=costVal;p.suggestedSellPrice=computeSuggested(costVal);p.markup=computeMarkup(p.sellPrice||0,costVal);save();closeModal(modalEditCost);refreshTable()}
+function parseCSV(text){const lines=text.split(/\r?\n/).filter(l=>l.trim().length>0);if(lines.length===0)return[];const headers=lines[0].split(',').map(h=>h.trim().toLowerCase());return lines.slice(1).map(line=>{const cols=line.split(',');const obj={};headers.forEach((h,i)=>obj[h]=(cols[i]||'').trim());return obj})}
+function importRowsAndUpsert(rows){let updated=0,added=0;rows.forEach(rw=>{const packs=Number(rw.packs)||0;const pcs=Number(rw.pcsperpack)||0;const cpp=Number(rw.costperpack)||0;const costVal=computeCost(packs,pcs,cpp);const sell=Number(rw.sellprice)||0;const cat=(rw.category||'').trim();const barcode=(rw.barcode||'').trim();const name=(rw.name||'').trim();const remarksVal=(rw.remarks||'').trim();if(!barcode&&!name)return;if(cat&& !categories.includes(cat))categories.push(cat);if(remarksVal && !remarks.includes(remarksVal))remarks.push(remarksVal);let existing=null;if(barcode){existing=products.find(p=>(p.barcode||'').toString()===barcode)}if(!existing&&name){const lowerName=name.toLowerCase();existing=products.find(p=>((p.name||'').toLowerCase()===lowerName))}if(existing){existing.category=cat||existing.category;existing.barcode=barcode||existing.barcode;existing.name=name||existing.name;existing.packs=packs||existing.packs;existing.pcsPerPack=pcs||existing.pcsPerPack;existing.costPerPack=cpp||existing.costPerPack;existing.cost=costVal||existing.cost;existing.sellPrice=isFinite(sell)?sell:existing.sellPrice;existing.suggestedSellPrice=computeSuggested(existing.cost);existing.markup=computeMarkup(existing.sellPrice,existing.cost);existing.checked=(String(rw.checked||'').toLowerCase()==='true')||!!existing.checked;existing.notes=(rw.notes!==undefined&&rw.notes!==null&&rw.notes!=='')?rw.notes:(existing.notes||'');existing.remarks=remarksVal||existing.remarks||'';updated++}else{const newItem={id:uid(),category:cat,barcode:barcode,name:name,packs:packs,pcsPerPack:pcs,costPerPack:cpp,cost:costVal,sellPrice:sell,suggestedSellPrice:computeSuggested(costVal),markup:computeMarkup(sell,costVal),checked:(String(rw.checked||'').toLowerCase()==='true'),notes:rw.notes||'',remarks:remarksVal||''};products.push(newItem);added++}});saveCats();saveRemarks();save();refreshTable();renderCategoriesTable();renderRemarksTable();populateSavedLists();alert('Import completed — '+updated+' updated, '+added+' added.');return{updated,added}}
+function handleFileImportLocal(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const rows=parseCSV(r.result);importRowsAndUpsert(rows)}catch(err){alert('Import error: '+err.message)}};r.readAsText(f);e.target.value=''}
+function exportCSVLocal(){const hdr=['category','barcode','name','packs','pcsperpack','costperpack','cost','sellprice','suggestedsellprice','markup','checked','remarks','notes'];const lines=[hdr.join(',')];products.forEach(p=>{const cols=[p.category,p.barcode,p.name,p.packs,p.pcsPerPack,p.costPerPack,p.cost,p.sellPrice,p.suggestedSellPrice,p.markup,p.checked,p.remarks||'',p.notes||''];lines.push(cols.map(c=>String(c).replace(/,/g,'')).join(','))});const blob=new Blob([lines.join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mattmat_products_v3_2_4.csv';a.click();URL.revokeObjectURL(a.href)}
+function exportCategoriesCSV(){const hdr=['category'];const lines=[hdr.join(',')];categories.forEach(c=>lines.push([c].join(',')));const blob=new Blob([lines.join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mattmat_categories_v3_2_4.csv';a.click();URL.revokeObjectURL(a.href)}
+function handleCategoriesImport(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const rows=parseCSV(r.result);rows.forEach(rw=>{const name=rw.category||rw.name||'';if(name&& !categories.includes(name))categories.push(name)});saveCats();renderCategoryOptions();renderCategoriesTable();alert('Imported categories: '+rows.length)}catch(err){alert('Categories import error: '+err.message)}};r.readAsText(f);e.target.value=''}
+function exportRemarksCSV(){const hdr=['remark'];const lines=[hdr.join(',')];remarks.forEach(r=>lines.push([r].join(',')));const blob=new Blob([lines.join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mattmat_remarks_v3_2_4.csv';a.click();URL.revokeObjectURL(a.href)}
+function handleRemarksImport(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const rows=parseCSV(r.result);rows.forEach(rw=>{const name=rw.remark||rw.name||rw.remarks||'';if(name && !remarks.includes(name))remarks.push(name)});saveRemarks();renderRemarksOptions();renderRemarksTable();alert('Imported remarks: '+rows.length)}catch(err){alert('Remarks import error: '+err.message)}};r.readAsText(f);e.target.value=''}
+function renderPurchaseTable(){purchaseContainer.innerHTML='';const checked=products.filter(p=>p.checked);if(checked.length===0){purchaseContainer.innerHTML='<div class=\"note\">No items selected for purchase.</div>';return}checked.sort((a,b)=>{const A=(a.category||'').toLowerCase()+'|'+(a.name||'').toLowerCase();const B=(b.category||'').toLowerCase()+'|'+(b.name||'').toLowerCase();if(A<B)return-1;if(A>B)return 1;return 0});const table=document.createElement('table');table.id='purchaseTable';const thead=document.createElement('thead');thead.innerHTML='<tr><th></th><th>Category</th><th>Item Name</th><th>Cost Per Pack</th><th>Notes</th></tr>';const tbody=document.createElement('tbody');checked.forEach(it=>{const tr=document.createElement('tr');tr.dataset.barcode=it.barcode||it.id;const tdBlank=document.createElement('td');tdBlank.style.width='36px';const tdCat=document.createElement('td');tdCat.textContent=it.category||'';const tdName=document.createElement('td');tdName.textContent=it.name||'';const tdCost=document.createElement('td');tdCost.textContent=formatNumber(it.costPerPack||it.cost);const tdNotes=document.createElement('td');tdNotes.className='notes-td';const ta=document.createElement('textarea');ta.className='note-input';ta.dataset.barcode=it.barcode||it.id;ta.value=it.notes||'';ta.addEventListener('input',()=>{const p=products.find(x=> (x.barcode||x.id)==ta.dataset.barcode);if(p){p.notes=ta.value;save()}});const span=document.createElement('div');span.className='note-print';let printed='';if(it.remarks)printed+=it.remarks;if(it.notes){if(printed)printed+='\n'+it.notes;else printed=it.notes}span.textContent=printed;tdNotes.appendChild(ta);tdNotes.appendChild(span);tr.appendChild(tdBlank);tr.appendChild(tdCat);tr.appendChild(tdName);tr.appendChild(tdCost);tr.appendChild(tdNotes);tbody.appendChild(tr)});table.appendChild(thead);table.appendChild(tbody);purchaseContainer.appendChild(table)}
+function savePurchaseList(){const name=prompt('Enter a name for this purchase list:');if(!name)return;const selected=products.filter(p=>p.checked).map(p=>({barcode:p.barcode||p.id,notes:p.notes||'',remarks:p.remarks||''}));if(selected.length===0){alert('No items selected to save.');return}const lists=loadSavedLists();lists.push({name:name,items:selected,created:Date.now()});saveSavedLists(lists);populateSavedLists();alert('Purchase list saved.')}
+function autoSavePurchaseListWithTimestamp(){const timestamp=new Date();const pad=n=>String(n).padStart(2,'0');const name=`Purchase_${timestamp.getFullYear()}-${pad(timestamp.getMonth()+1)}-${pad(timestamp.getDate())}_${pad(timestamp.getHours())}${pad(timestamp.getMinutes())}${pad(timestamp.getSeconds())}`;const selected=products.filter(p=>p.checked).map(p=>({barcode:p.barcode||p.id,notes:p.notes||'',remarks:p.remarks||''}));if(selected.length===0)return null;const lists=loadSavedLists();lists.push({name:name,items:selected,created:Date.now()});saveSavedLists(lists);populateSavedLists();return name}
+function autoSaveAndPrint(){document.querySelectorAll('textarea.note-input').forEach(ta=>{const p=products.find(x=>(x.barcode||x.id)==ta.dataset.barcode);if(p){p.notes=ta.value}});save();const savedName=autoSavePurchaseListWithTimestamp();renderPurchaseTable();if(savedName)alert('Purchase list auto-saved as \"'+savedName+'\"');setTimeout(()=>{window.print()},200)}
+function populateSavedLists(){const lists=loadSavedLists();savedListsSelect.innerHTML='';lists.forEach((l,i)=>{const opt=document.createElement('option');opt.value=i;opt.textContent=l.name+' ('+new Date(l.created).toLocaleString()+')';savedListsSelect.appendChild(opt)});if(lists.length===0){const opt=document.createElement('option');opt.value='';opt.textContent='-- no saved lists --';savedListsSelect.appendChild(opt)}}
+function loadSelectedPurchaseList(){const idx=savedListsSelect.value;if(idx===''){alert('No saved list selected.');return}const lists=loadSavedLists();const sel=lists[Number(idx)];if(!sel)return;products.forEach(p=>p.checked=false);sel.items.forEach(it=>{const p=products.find(x=> (x.barcode||x.id)==it.barcode);if(p){p.checked=true;p.notes=it.notes||p.notes;p.remarks=it.remarks||p.remarks}});save();refreshTable();showView('purchase');renderPurchaseTable();alert('Loaded saved purchase list: '+sel.name)}
+function exportPurchaseListsCSV(){const lists=loadSavedLists();if(lists.length===0){alert('No saved purchase lists to export.');return}const hdr=['name','created','items_json'];const lines=[hdr.join(',')];lists.forEach(l=>{const line=[l.name,l.created,JSON.stringify(l.items).replace(/,/g,';')];lines.push(line.join(','))});const blob=new Blob([lines.join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mattmat_purchase_lists_v3_2_4.csv';a.click();URL.revokeObjectURL(a.href)}
+function handlePurchaseListsImport(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const rows=parseCSV(r.result);const lists=loadSavedLists();rows.forEach(rw=>{const name=rw.name||('Imported_'+(new Date()).toISOString());const created=Number(rw.created)||Date.now();let items=[];if(rw.items_json){try{items=JSON.parse(rw.items_json.replace(/;/g,','))}catch(err){try{items=JSON.parse(rw.items_json)}catch(e){}}}lists.push({name,items,created})});saveSavedLists(lists);populateSavedLists();alert('Imported purchase lists: '+rows.length)}catch(err){alert('Purchase lists import error: '+err.message)}};r.readAsText(f);e.target.value=''}
+function showView(which){if(which==='purchase'){productView.classList.remove('active');categoriesView.classList.remove('active');purchaseView.classList.add('active');renderPurchaseTable()}else if(which==='categories'){productView.classList.remove('active');purchaseView.classList.remove('active');categoriesView.classList.add('active');renderCategoriesTable();renderRemarksTable()}else{purchaseView.classList.remove('active');categoriesView.classList.remove('active');productView.classList.add('active')}}
+async function importFromDrive(){if(!gapiInited)return alert('Google API not ready.');try{if(!accessToken)await requestAccessToken();const res=await gapi.client.drive.files.list({q:`mimeType='text/csv' or name contains '.csv'`,pageSize:50,fields:'files(id,name,createdTime)'});const files=res.result.files||[];if(files.length===0)return alert('No CSV files found in your Drive.');const nameList=files.map((f,i)=>`${i+1}. ${f.name}`).join('\n');const choice=prompt('Choose file number to import from Drive:\n'+nameList);if(!choice)return;const idx=Number(choice)-1;if(isNaN(idx)||idx<0||idx>=files.length)return alert('Invalid selection');const fileId=files[idx].id;const res2=await gapi.client.drive.files.get({fileId: fileId,alt:'media'});const csv=res2.body||res2.result;const rows=parseCSV(csv);importRowsAndUpsert(rows)}catch(err){console.error(err);alert('Drive import error: '+(err.message||err.statusText||err))}}
+async function exportToDrive(){if(!gapiInited)return alert('Google API not ready.');try{if(!accessToken)await requestAccessToken();const csv=buildCSVString();const list=await gapi.client.drive.files.list({q:`name='${APP_DRIVE_FILENAME.replace(/'/g,"\\'")}'`,fields:'files(id,name)'});const files=list.result.files||[];if(files.length>0){const fileId=files[0].id;const res=await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,{method:'PATCH',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'text/csv'},body:csv});if(res.ok)alert('Backup updated on Google Drive');else{const text=await res.text();alert('Drive update failed: '+res.statusText+' '+text)}}else{const metadata={name:APP_DRIVE_FILENAME,mimeType:'text/csv'};const form=new FormData();form.append('metadata',new Blob([JSON.stringify(metadata)],{type:'application/json'}));form.append('file',new Blob([csv],{type:'text/csv'}));const res=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',{method:'POST',headers:{Authorization:'Bearer '+accessToken},body:form});if(res.ok)alert('Backup saved to Google Drive');else{const text=await res.text();alert('Drive upload failed: '+res.statusText+' '+text)}}}catch(err){console.error(err);alert('Drive export error: '+(err.message||err.statusText||err))}}
+function buildCSVString(){const hdr=['category','barcode','name','packs','pcsperpack','costperpack','cost','sellprice','suggestedsellprice','markup','checked','remarks','notes'];const lines=[hdr.join(',')];products.forEach(p=>{const cols=[p.category,p.barcode,p.name,p.packs,p.pcsPerPack,p.costPerPack,p.cost,p.sellPrice,p.suggestedSellPrice,p.markup,p.checked,p.remarks||'',p.notes||''];lines.push(cols.map(c=>String(c).replace(/,/g,'')).join(','))});return lines.join('\n')}
+function requestAccessToken(){return new Promise((resolve,reject)=>{if(!tokenClient)return reject(new Error('Token client not initialized'));tokenClient.requestAccessToken({prompt:'consent',callback:resp=>{if(resp.error)return reject(resp);accessToken=resp.access_token;if(gapiInited)gapi.client.setToken({access_token:accessToken});driveStatus.textContent='Drive: Signed in';resolve(resp)}})})}
+function loadIdentityScriptAndStart(){if(typeof google!=='undefined'&&typeof gapi!=='undefined'){init();return}if(!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')){const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=()=>{console.log('GIS loaded');if(typeof gapi!=='undefined')init();else setTimeout(loadIdentityScriptAndStart,200)};s.onerror=()=>{console.warn('Failed to load GIS script')};document.head.appendChild(s)}const poll=setInterval(()=>{if(typeof google!=='undefined'&&typeof gapi!=='undefined'){clearInterval(poll);init()}},200)}
+window.addEventListener('load',()=>{updateDriveUI();function loadGoogleScripts(){return new Promise(resolve=>{let attempts=0;function checkReady(){if(typeof gapi!=='undefined'&&typeof google!=='undefined'){resolve()}else if(++attempts<50){setTimeout(checkReady,200)}else{alert('Google libraries failed to load. Check network or origin.')}}if(!document.querySelector('script[src*="apis.google.com/js/api.js"]')){const gapiScript=document.createElement('script');gapiScript.src='https://apis.google.com/js/api.js';document.head.appendChild(gapiScript)}if(!document.querySelector('script[src*="accounts.google.com/gsi/client"]')){const gisScript=document.createElement('script');gisScript.src='https://accounts.google.com/gsi/client';document.head.appendChild(gisScript)}checkReady()});}loadGoogleScripts().then(()=>{console.log('Google libs ready');init()})})
+window._mattmat={products,categories,remarks,exportToDrive,importFromDrive,exportCSVLocal}
 })();
 </script>
-</body>
-</html>
+
+</body></html>
