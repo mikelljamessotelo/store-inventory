@@ -247,6 +247,130 @@
   }
 }
 
+
+/* Floating Edit Button */
+#floatingEditBtn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  font-size: 24px;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+#floatingEditBtn:hover {
+  background-color: #66bb6a;
+  transform: scale(1.05);
+}
+
+/* Match filter buttons' height to header buttons */
+.filters-row select, 
+.filters-row button {
+  height: 40px !important;
+  line-height: 1 !important;
+  padding: 8px 14px !important;
+  border-radius: 8px !important;
+  font-size: 15px !important;
+}
+
+/* Force exact sizing parity between header buttons and filter controls */
+header .controls button,
+header .controls > button {
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 8px 12px !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  font-size: 14px !important;
+}
+
+/* Make filter selects and buttons identical in box model and border to header buttons */
+.filters-row select,
+.filters-row button,
+#filterCategory, #filterRemarks, #btnResetFilters, #btnUncheck {
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 8px 12px !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  font-size: 14px !important;
+  border-radius: 8px !important;
+}
+
+/* Ensure mobile doesn't override height - keep consistent */
+@media (max-width:768px) {
+  header .controls button,
+  .filters-row select,
+  .filters-row button {
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+}
+
+
+/* Hide the Rows label and textbox */
+#rowsPerPageLabel,
+label[for="rowsPerPage"],
+label:has(#rowsPerPage),
+#rowsPerPage {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Edit Item modal: place Delete (left) and Save (right) on one line */
+#modalItem .btn-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+}
+#modalItem .btn-row button {
+  flex: 0 0 auto !important;
+  min-width: 120px !important;
+}
+
+/* Edit Item modal: make Save bigger and Delete smaller */
+#modalItem .btn-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+}
+#modalItem #itemDelete {
+  background: #ffebee !important;
+  color: #d32f2f !important;
+  border: 1px solid #d32f2f !important;
+  min-width: 100px !important;
+  padding: 6px 10px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+#modalItem #itemSave {
+  background: #4caf50 !important;
+  color: #fff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  min-width: 160px !important;
+  padding: 12px 18px !important;
+  border-radius: 8px !important;
+}
 </style>
 </head>
 <body>
@@ -303,8 +427,15 @@
         </tr>
       </thead>
       <tbody></tbody>
-    </table>
-  </div>
+    </table></div>
+
+
+<div id="bottomControls" style="display:flex; gap:8px; justify-content:space-between; margin-top:12px; flex-wrap:wrap;">
+  <button id="btnAddBottom" style="flex:1 1 0; min-width:120px; background:#a5d6a7; color:#2e7d32; border:1px solid #81c784; border-radius:8px; padding:10px; font-size:16px; font-weight:600;">➕ Add Item</button>
+  <button id="btnEditItemBottom" disabled style="flex:1 1 0; min-width:120px; background:#fff59d; color:#f9a825; border:1px solid #fbc02d; border-radius:8px; padding:10px; font-size:16px; font-weight:600;">✏️ Edit Item</button>
+</div>
+
+
 </section>
 
 <section id="purchaseView" class="view">
@@ -487,8 +618,86 @@
 <input id="fileInputPurchase" type="file" accept="text/csv" style="display:none">
 
 <!-- Google API libs -->
-<script src="https://apis.google.com/js/api.js"></script>
-<script src="https://accounts.google.com/gsi/client"></script>
+<script src="https://apis.google.com/js/api.js">
+
+// Floating Edit Button Logic (always visible in Product View)
+const floatingEditBtn = document.getElementById('floatingEditBtn');
+function updateFloatingEditVisibility() {
+  const productView = document.getElementById('productView');
+  const purchaseView = document.getElementById('purchaseView');
+  const categoriesView = document.getElementById('categoriesView');
+  if (!floatingEditBtn) return;
+  if (productView && productView.classList.contains('active')) {
+    floatingEditBtn.style.display = 'flex';
+  } else {
+    floatingEditBtn.style.display = 'none';
+  }
+}
+if (typeof btnEditItem !== 'undefined' && floatingEditBtn) {
+  floatingEditBtn.addEventListener('click', () => {
+    if (!btnEditItem.disabled) btnEditItem.click();
+    else alert('Please select an item to edit.');
+  });
+  document.addEventListener('click', updateFloatingEditVisibility);
+  window.addEventListener('load', updateFloatingEditVisibility);
+  window.addEventListener('resize', updateFloatingEditVisibility);
+}
+
+// Duplicate Add/Edit buttons functionality
+const btnAddBottom = document.getElementById('btnAddBottom');
+const btnEditItemBottom = document.getElementById('btnEditItemBottom');
+if (btnAddBottom && typeof btnAdd !== 'undefined') {
+  btnAddBottom.addEventListener('click', () => btnAdd.click());
+}
+if (btnEditItemBottom && typeof btnEditItem !== 'undefined') {
+  btnEditItemBottom.addEventListener('click', () => btnEditItem.click());
+}
+document.addEventListener('click', () => {
+  if (typeof btnEditItem !== 'undefined' && btnEditItemBottom) {
+    btnEditItemBottom.disabled = btnEditItem.disabled;
+  }
+});
+</script>
+<script src="https://accounts.google.com/gsi/client">
+
+// Floating Edit Button Logic (always visible in Product View)
+const floatingEditBtn = document.getElementById('floatingEditBtn');
+function updateFloatingEditVisibility() {
+  const productView = document.getElementById('productView');
+  const purchaseView = document.getElementById('purchaseView');
+  const categoriesView = document.getElementById('categoriesView');
+  if (!floatingEditBtn) return;
+  if (productView && productView.classList.contains('active')) {
+    floatingEditBtn.style.display = 'flex';
+  } else {
+    floatingEditBtn.style.display = 'none';
+  }
+}
+if (typeof btnEditItem !== 'undefined' && floatingEditBtn) {
+  floatingEditBtn.addEventListener('click', () => {
+    if (!btnEditItem.disabled) btnEditItem.click();
+    else alert('Please select an item to edit.');
+  });
+  document.addEventListener('click', updateFloatingEditVisibility);
+  window.addEventListener('load', updateFloatingEditVisibility);
+  window.addEventListener('resize', updateFloatingEditVisibility);
+}
+
+// Duplicate Add/Edit buttons functionality
+const btnAddBottom = document.getElementById('btnAddBottom');
+const btnEditItemBottom = document.getElementById('btnEditItemBottom');
+if (btnAddBottom && typeof btnAdd !== 'undefined') {
+  btnAddBottom.addEventListener('click', () => btnAdd.click());
+}
+if (btnEditItemBottom && typeof btnEditItem !== 'undefined') {
+  btnEditItemBottom.addEventListener('click', () => btnEditItem.click());
+}
+document.addEventListener('click', () => {
+  if (typeof btnEditItem !== 'undefined' && btnEditItemBottom) {
+    btnEditItemBottom.disabled = btnEditItem.disabled;
+  }
+});
+</script>
 
 <script>
 (function(){
@@ -1720,6 +1929,46 @@ function showView(which){
 })();
 
 })();
+
+
+// Floating Edit Button Logic (always visible in Product View)
+const floatingEditBtn = document.getElementById('floatingEditBtn');
+function updateFloatingEditVisibility() {
+  const productView = document.getElementById('productView');
+  const purchaseView = document.getElementById('purchaseView');
+  const categoriesView = document.getElementById('categoriesView');
+  if (!floatingEditBtn) return;
+  if (productView && productView.classList.contains('active')) {
+    floatingEditBtn.style.display = 'flex';
+  } else {
+    floatingEditBtn.style.display = 'none';
+  }
+}
+if (typeof btnEditItem !== 'undefined' && floatingEditBtn) {
+  floatingEditBtn.addEventListener('click', () => {
+    if (!btnEditItem.disabled) btnEditItem.click();
+    else alert('Please select an item to edit.');
+  });
+  document.addEventListener('click', updateFloatingEditVisibility);
+  window.addEventListener('load', updateFloatingEditVisibility);
+  window.addEventListener('resize', updateFloatingEditVisibility);
+}
+
+// Duplicate Add/Edit buttons functionality
+const btnAddBottom = document.getElementById('btnAddBottom');
+const btnEditItemBottom = document.getElementById('btnEditItemBottom');
+if (btnAddBottom && typeof btnAdd !== 'undefined') {
+  btnAddBottom.addEventListener('click', () => btnAdd.click());
+}
+if (btnEditItemBottom && typeof btnEditItem !== 'undefined') {
+  btnEditItemBottom.addEventListener('click', () => btnEditItem.click());
+}
+document.addEventListener('click', () => {
+  if (typeof btnEditItem !== 'undefined' && btnEditItemBottom) {
+    btnEditItemBottom.disabled = btnEditItem.disabled;
+  }
+});
 </script>
+<button id="floatingEditBtn" title="Edit Selected Item">✏️</button>
 </body>
 </html>
