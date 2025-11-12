@@ -841,7 +841,36 @@ let tokenClient = null;
    Helpers
    ------------------------- */
 function uid(){ return 'id_'+Math.random().toString(36).slice(2,9) }
-function saveAll(){ localStorage.setItem(KEY, JSON.stringify(products)); localStorage.setItem(KEY_CATS, JSON.stringify(categories)); localStorage.setItem(KEY_REMARKS, JSON.stringify(remarks)); localStorage.setItem(KEY_SAVED_PURCHASES, JSON.stringify(savedPurchaseLists)); }
+function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    // Safari flush workaround: on iOS Safari sometimes fails to fully commit large writes.
+    // Retry once by removing and re-setting if the stored value seems truncated.
+    try {
+      if (navigator && navigator.userAgent && navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome')) {
+        const stored = localStorage.getItem(key);
+        if (!stored || stored.length < Math.max(1, Math.floor(value.length * 0.85))) {
+          localStorage.removeItem(key);
+          localStorage.setItem(key, value);
+        }
+      }
+    } catch(e2) {
+      // ignore secondary failures
+      console.warn('Safari flush check failed', e2);
+    }
+  } catch (err) {
+    console.warn('localStorage write failed for', key, err);
+    // Provide clear feedback so user can act (e.g., clear old lists)
+    try { alert('⚠️ Unable to save data to localStorage. Safari may be restricting storage or quota is full. Clear older lists or try in Chrome.'); } catch(e) {}
+  }
+}
+
+function saveAll(){
+  safeSetItem(KEY, JSON.stringify(products));
+  safeSetItem(KEY_CATS, JSON.stringify(categories));
+  safeSetItem(KEY_REMARKS, JSON.stringify(remarks));
+  safeSetItem(KEY_SAVED_PURCHASES, JSON.stringify(savedPurchaseLists));
+}
 function loadAll(){ try{ products = JSON.parse(localStorage.getItem(KEY)) || [] }catch(e){ products = [] } try{ categories = JSON.parse(localStorage.getItem(KEY_CATS)) || [] }catch(e){ categories = [] } try{ remarks = JSON.parse(localStorage.getItem(KEY_REMARKS)) || [] }catch(e){ remarks = [] } try{ savedPurchaseLists = JSON.parse(localStorage.getItem(KEY_SAVED_PURCHASES)) || [] }catch(e){ savedPurchaseLists = [] } }
 function computeCost(packs,pcsPerPack,costPerPack){ packs = Number(packs)||0; pcsPerPack = Number(pcsPerPack)||0; costPerPack = Number(costPerPack)||0; if(packs*pcsPerPack === 0) return 0; return costPerPack / (packs * pcsPerPack); }
 function computeSuggested(cost){ return (Number(cost)||0) * 1.2; }
