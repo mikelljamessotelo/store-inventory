@@ -153,6 +153,78 @@
 
   /* small spacing tweak for modal grid labels */
   label{display:block;margin-bottom:6px;font-size:13px}
+
+/* ===== Mobile Enhancements ===== */
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .controls {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .controls button {
+    flex: 1 1 48%;
+    font-size: 13px;
+    padding: 10px;
+  }
+  h1 {
+    font-size: 16px;
+    line-height: 1.2;
+  }
+  body {
+    padding: 10px;
+    font-size: 15px;
+  }
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .search {
+    flex-direction: column;
+    width: 100%;
+  }
+  .search input, .search select, .search button {
+    width: 100%;
+  }
+  table {
+    font-size: 13px;
+  }
+  th, td {
+    padding: 6px;
+  }
+  .table-wrap {
+    overflow-x: auto;
+  }
+  .btn-add, .btn-remove {
+    width: 100%;
+    font-size: 13px;
+    padding: 10px;
+  }
+  .modal {
+    width: 95%;
+    max-width: none;
+    min-width: auto;
+    margin: 10px;
+    padding: 12px;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .btn-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .btn-row button {
+    width: 100%;
+  }
+}
+
 </style>
 </head>
 <body>
