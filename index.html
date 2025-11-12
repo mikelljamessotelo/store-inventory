@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Store Inventory — Version 3.2.7</title>
+<title>Store Inventory — Version 3.2.7 (Numeric Controls)</title>
 <style>
   :root{
     --bg:#f6f6f6;
@@ -99,6 +99,17 @@
     font-size:14px;
   }
   .btn-remove:hover { background: #e57373; }
+
+.btn-add, .btn-remove {
+  width: 38px !important;
+  height: 38px !important;
+  font-size: 20px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
   body.dark .btn-add, body.dark .btn-remove { box-shadow: 0 1px 0 rgba(0,0,0,0.15) inset; }
 
   /* Ensure selected row text is readable in both light/dark modes */
@@ -241,8 +252,8 @@
 <body>
 <header>
   <div>
-    <h1 id="appTitle">Store Inventory — Version 3.2.7</h1>
-    <div class="note">Created by Mikell James Sotelo</div>
+    <h1 id="appTitle">Store Inventory — Version 3.2.7 (Numeric Controls)</h1>
+    <div class="note">Single-file offline inventory. Data saved to localStorage. Optional Google Drive sync available.</div>
   </div>
   <div class="controls">
     <button id="btnAdd">➕</button>
@@ -278,15 +289,15 @@
 
   <div class="table-wrap" id="tableWrap">
     <table id="productTable">
-      <thead>
+      <thead class="sortable">
         <tr>
           <th class="sortable" data-key="category">Category</th>
           <th class="sortable" data-key="barcode">Barcode</th>
           <th class="sortable" data-key="name">Item Name</th>
-          <th style="width:110px">Purchase</th>
+          <th style="width:110px" class="sortable">Purchase</th>
           <th class="sortable center" data-key="cost">Cost</th>
           <th class="sortable center" data-key="sellPrice">Sell Price</th>
-          <th class="center">Suggested Sell Price</th>
+          <th class="center" class="sortable">Suggested Sell Price</th>
           <th class="sortable center" data-key="markup">Mark-Up</th>
           <th class="sortable" data-key="remarks">Remarks</th>
         </tr>
@@ -326,7 +337,7 @@
           <button id="btnImportCategories">📂 Import Categories</button>
         </div>
         <div style="overflow:auto;max-height:48vh">
-          <table id="categoriesTable"><thead><tr><th>Category</th><th>Actions</th></tr></thead><tbody></tbody></table>
+          <table id="categoriesTable"><thead class="sortable"><tr><th class="sortable">Category</th><th class="sortable">Actions</th></tr></thead><tbody></tbody></table>
         </div>
       </div>
       <div style="flex:1">
@@ -336,7 +347,7 @@
           <button id="btnImportRemarks">📂 Import Remarks</button>
         </div>
         <div style="overflow:auto;max-height:48vh">
-          <table id="remarksTable"><thead><tr><th>Remark</th><th>Actions</th></tr></thead><tbody></tbody></table>
+          <table id="remarksTable"><thead class="sortable"><tr><th class="sortable">Remark</th><th class="sortable">Actions</th></tr></thead><tbody></tbody></table>
         </div>
       </div>
     </div>
@@ -685,7 +696,7 @@ function refreshTable(){
     const tdName = document.createElement('td'); tdName.textContent = it.name || '';
     const tdBtn = document.createElement('td'); tdBtn.style.textAlign='center'; tdBtn.className='touch-check';
     const btn = document.createElement('button');
-    btn.textContent = it.checked ? '➖ Remove' : '➕ Add';
+    btn.textContent = it.checked ? '−' : '+';
     btn.title = it.checked ? 'Remove from purchase list' : 'Add to purchase list';
     btn.className = it.checked ? 'btn-remove' : 'btn-add';
     btn.addEventListener('click', e => { e.stopPropagation(); it.checked = !it.checked; saveAll(); refreshTable(); renderPurchaseTable(); });
@@ -1212,7 +1223,7 @@ function renderPurchaseTable(){
 
   const table = document.createElement('table'); table.id='purchaseTable';
   const thead = document.createElement('thead');
-  thead.innerHTML = '<tr><th></th><th>Category</th><th>Item Name</th><th>Cost Per Pack</th><th>Notes</th></tr>';
+  thead.innerHTML = '<tr><th class="sortable"></th><th class="sortable">Category</th><th class="sortable">Item Name</th><th class="sortable">Cost Per Pack</th><th class="sortable">Notes</th></tr>';
   const tbody = document.createElement('tbody');
 
   checked.sort((a,b)=>{ const A=(a.category||'').toLowerCase()+'|'+(a.name||'').toLowerCase(); const B=(b.category||'').toLowerCase()+'|'+(b.name||'').toLowerCase(); if(A<B) return -1; if(A>B) return 1; return 0; });
