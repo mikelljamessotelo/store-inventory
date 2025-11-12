@@ -1866,6 +1866,7 @@ async function handleDriveImportAll(){
   }
 }
 
+
 async function importCSVsFromDrive(){
   try {
     driveStatusEl.textContent = 'Drive: Searching CSV files...';
@@ -1873,7 +1874,11 @@ async function importCSVsFromDrive(){
     const catFile = await findDriveFileByName(DRIVE_CATEGORIES_CSV);
     const remFile = await findDriveFileByName(DRIVE_REMARKS_CSV);
     const purFile = await findDriveFileByName(DRIVE_PURCHASES_CSV);
-    if(!prodFile && !catFile && !remFile && !purFile){ alert('No importable CSV files found on Drive.'); driveStatusEl.textContent = 'Drive: No CSVs found'; return; }
+    if(!prodFile && !catFile && !remFile && !purFile){ 
+      alert('No importable CSV files found on Drive.'); 
+      driveStatusEl.textContent = 'Drive: No CSVs found'; 
+      return; 
+    }
 
     if(prodFile){
       const text = await downloadFileFromDriveById(prodFile.id);
@@ -1883,37 +1888,49 @@ async function importCSVsFromDrive(){
     if(catFile){
       const text = await downloadFileFromDriveById(catFile.id);
       const rows = parseCSV(text);
-      rows.forEach(rw=>{ const name = rw.category || rw.name || ''; if(name && !categories.includes(name)) categories.push(name); });
+      rows.forEach(rw => { 
+        const name = rw.category || rw.name || ''; 
+        if(name && !categories.includes(name)) categories.push(name); 
+      });
       saveAll(); renderCategoryOptions(); renderCategoriesTable();
     }
     if(remFile){
       const text = await downloadFileFromDriveById(remFile.id);
       const rows = parseCSV(text);
-      rows.forEach(rw=>{ const name = rw.remark || rw.name || rw.remarks || ''; if(name && !remarks.includes(name)) remarks.push(name); });
+      rows.forEach(rw => { 
+        const name = rw.remark || rw.name || rw.remarks || ''; 
+        if(name && !remarks.includes(name)) remarks.push(name); 
+      });
       saveAll(); renderRemarksOptions(); renderRemarksTable();
     }
     if(purFile){
       const text = await downloadFileFromDriveById(purFile.id);
       const rows = parseCSV(text);
-      rows.forEach(rw=>{
-        const name = rw.name || ('Imported_'+new Date().toISOString());
+      rows.forEach(rw => {
+        const name = rw.name || ('Imported_' + new Date().toISOString());
         const created = Number(rw.created) || Date.now();
         let items = [];
         if(rw.items_json){
-          try{ items = JSON.parse(rw.items_json.replace(/;/g,',')) }catch(err){ try{ items = JSON.parse(rw.items_json) }catch(e){} }
+          try { 
+            items = JSON.parse(decodeURIComponent(rw.items_json)); 
+          } catch(err){ 
+            console.warn('Decode fallback for', name, err);
+            try { items = JSON.parse(rw.items_json.replace(/;/g,',')); } catch(e) { items = []; }
+          }
         }
         savedPurchaseLists.push({ name, items, created });
       });
       saveAll(); populateSavedLists();
     }
     driveStatusEl.textContent = 'Drive: CSV import complete';
-    alert('Drive CSV import completed where files existed.');
+    alert('Drive CSV import completed successfully.');
   } catch(err){
     console.error('importCSVsFromDrive error', err);
-    alert('Drive CSV import failed: ' + (err.message||err));
+    alert('Drive CSV import failed: ' + (err.message || err));
     driveStatusEl.textContent = 'Drive: CSV import failed';
   }
 }
+
 
 /* -------------------------
    View switching
