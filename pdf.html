@@ -6,39 +6,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
-    :root {
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      background: #f5f5f5;
-      color: #111;
-    }
-
     body {
       margin: 0;
       padding: 12px;
       background: #f5f5f5;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
     }
 
     .wrap {
       max-width: 640px;
       margin: 0 auto;
-      background: #ffffff;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      background: #fff;
       padding: 12px;
-      box-sizing: border-box;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.12);
     }
 
     h1 {
+      margin: 0 0 8px;
+      text-align: center;
       font-size: 18px;
-      margin: 0 0 4px 0;
-      text-align: center;
-    }
-
-    .note {
-      font-size: 12px;
-      color: #555;
-      text-align: center;
-      margin-bottom: 10px;
     }
 
     .buttons {
@@ -46,59 +33,30 @@
       gap: 8px;
       justify-content: center;
       margin-bottom: 8px;
-      flex-wrap: wrap;
     }
 
     button {
       padding: 8px 14px;
       border-radius: 8px;
       border: 1px solid #444;
-      background: #fafafa;
       cursor: pointer;
       font-size: 14px;
     }
 
-    button:active {
-      transform: scale(0.98);
-    }
-
     #copyBtn {
       background: #4caf50;
-      border-color: #388e3c;
       color: #fff;
       font-weight: 600;
     }
 
-    #refreshBtn {
-      background: #eeeeee;
-    }
-
-    #status {
-      font-size: 12px;
-      text-align: center;
-      margin-bottom: 8px;
-      min-height: 16px;
-      color: #333;
-    }
-
     textarea {
       width: 100%;
-      min-height: 260px;
-      box-sizing: border-box;
-      resize: vertical;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      padding: 8px;
+      min-height: 300px;
       font-family: "Courier New", Courier, monospace;
       font-size: 13px;
       white-space: pre;
-    }
-
-    @media (max-width: 600px) {
-      .wrap {
-        border-radius: 0;
-        box-shadow: none;
-      }
+      padding: 8px;
+      box-sizing: border-box;
     }
   </style>
 </head>
@@ -106,30 +64,22 @@
 <body>
   <div class="wrap">
     <h1>Mattmat Purchase — Text Copy</h1>
-    <div class="note">
-      Categories: ALL CAPS<br>
-      Items: Capitalized Each Word<br>
-      32 chars per line • No word cutting • No dash on wrap
-    </div>
 
     <div class="buttons">
-      <button id="refreshBtn">🔄 Refresh from Inventory</button>
-      <button id="copyBtn">📋 Copy Text</button>
+      <button id="refreshBtn">Refresh</button>
+      <button id="copyBtn">Copy</button>
     </div>
-
-    <div id="status"></div>
 
     <textarea id="output" readonly></textarea>
   </div>
 
   <script>
     const KEY = 'store_inventory_v3_2_7';
-    const MAX_CHARS = 32;
+    const MAX = 32;
 
-    const outputEl = document.getElementById('output');
-    const statusEl = document.getElementById('status');
+    const out = document.getElementById('output');
 
-    function loadProductsFromLocalStorage() {
+    function loadData() {
       try {
         const raw = localStorage.getItem(KEY);
         return raw ? JSON.parse(raw) : [];
@@ -142,18 +92,19 @@
       return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
     }
 
-    /* ---- WORD SAFE WRAPPER ---- */
-    function wrapItemLine(text) {
+    function wrapItem(text) {
       const words = text.split(' ');
       const lines = [];
       let current = '';
 
       words.forEach(word => {
-        if ((current ? current + ' ' : '') + word.length > MAX_CHARS) {
+        const test = current ? current + ' ' + word : word;
+
+        if (test.length > MAX) {
           lines.push(current);
           current = word;
         } else {
-          current = current ? current + ' ' + word : word;
+          current = test;
         }
       });
 
@@ -161,21 +112,18 @@
       return lines;
     }
 
-    function buildText() {
-      const products = loadProductsFromLocalStorage();
-      const checked = products.filter(p => p && p.checked);
-
-      if (!checked.length) {
-        outputEl.value = '';
-        statusEl.textContent = 'No checked items.';
+    function build() {
+      const data = loadData().filter(i => i && i.checked);
+      if (!data.length) {
+        out.value = '';
         return;
       }
 
       const groups = new Map();
 
-      checked.forEach(p => {
-        const cat = p.category?.trim() || 'UNCATEGORIZED';
-        const name = p.name?.trim();
+      data.forEach(i => {
+        const cat = (i.category || 'UNCATEGORIZED').trim();
+        const name = (i.name || '').trim();
         if (!name) return;
         if (!groups.has(cat)) groups.set(cat, []);
         groups.get(cat).push(titleCase(name));
@@ -183,17 +131,16 @@
 
       let lines = [];
 
-      for (const [cat, items] of groups.entries()) {
+      for (const [cat, items] of groups) {
         lines.push(`***${cat.toUpperCase()}***`);
 
         items.forEach(item => {
-          const wrapped = wrapItemLine(item);
-
-          wrapped.forEach((line, i) => {
-            if (i === 0) {
+          const wrapped = wrapItem(item);
+          wrapped.forEach((line, idx) => {
+            if (idx === 0) {
               lines.push(`- ${line}`);
             } else {
-              lines.push(`  ${line}`); // indent, no dash
+              lines.push(`  ${line}`);
             }
           });
         });
@@ -201,18 +148,16 @@
         lines.push('');
       }
 
-      outputEl.value = lines.join('\n');
-      statusEl.textContent =
-        `Loaded ${checked.length} item(s) in ${groups.size} categor(y/ies).`;
+      out.value = lines.join('\n');
     }
 
-    document.getElementById('copyBtn').onclick = async () => {
-      await navigator.clipboard.writeText(outputEl.value);
-      statusEl.textContent = 'Copied to clipboard ✅';
+    document.getElementById('refreshBtn').onclick = build;
+
+    document.getElementById('copyBtn').onclick = () => {
+      navigator.clipboard.writeText(out.value);
     };
 
-    document.getElementById('refreshBtn').onclick = buildText;
-    window.onload = buildText;
+    window.onload = build;
   </script>
 </body>
 </html>
