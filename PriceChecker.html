@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Price Checker</title>
+<title>Price Checker (Debug)</title>
 
 <style>
     body {
@@ -33,6 +33,17 @@
         border-radius: 14px;
         border: 2px solid #bbb;
         text-align: center;
+    }
+
+    .debug {
+        background: #fff3cd;
+        border: 1px solid #ffeeba;
+        margin: 16px auto;
+        padding: 14px;
+        max-width: 700px;
+        font-size: 16px;
+        text-align: left;
+        border-radius: 10px;
     }
 
     .card {
@@ -76,18 +87,12 @@
         margin-top: 22px;
         display: none;
     }
-
-    footer {
-        margin-top: 30px;
-        font-size: 14px;
-        color: #777;
-    }
 </style>
 </head>
 
 <body>
 
-<header>🧾 PRICE CHECKER</header>
+<header>🧾 PRICE CHECKER (DEBUG)</header>
 
 <div class="search-box">
     <input
@@ -96,6 +101,10 @@
         placeholder="Scan barcode or type item name"
         autofocus
     >
+</div>
+
+<div class="debug" id="debugBox">
+    Loading data...
 </div>
 
 <div class="card" id="itemCard">
@@ -113,35 +122,65 @@
 
 <div class="not-found" id="notFound">Item not found</div>
 
-<footer>© 2025 Mattmat Store</footer>
-
 <script>
-/* SAME STORAGE AS MAIN SYSTEM */
-const STORAGE_KEY = "products";
+/* TRY COMMON STORAGE KEYS USED IN YOUR SYSTEM */
+const STORAGE_KEYS = ["products", "inventory", "items"];
 
 const input = document.getElementById("searchInput");
 const card = document.getElementById("itemCard");
 const notFound = document.getElementById("notFound");
+const debugBox = document.getElementById("debugBox");
+
+let activeKey = null;
+let products = [];
+
+/* Load data */
+STORAGE_KEYS.forEach(key => {
+    const data = localStorage.getItem(key);
+    if (data && data !== "[]") {
+        try {
+            const parsed = JSON.parse(data);
+            if (Array.isArray(parsed) && parsed.length) {
+                activeKey = key;
+                products = parsed;
+            }
+        } catch {}
+    }
+});
+
+/* Debug output */
+if (!activeKey) {
+    debugBox.innerHTML = `
+        <b>❌ No inventory data found</b><br>
+        Checked keys: ${STORAGE_KEYS.join(", ")}
+    `;
+} else {
+    debugBox.innerHTML = `
+        <b>✅ Data loaded</b><br>
+        Storage key: <b>${activeKey}</b><br>
+        Total items: <b>${products.length}</b><br><br>
+        <b>Sample items:</b><br>
+        ${products.slice(0,3).map(i =>
+            `• ${i.name || "(no name)"} — ${i.barcode || "(no barcode)"}`
+        ).join("<br>")}
+    `;
+}
 
 input.addEventListener("keydown", e => {
     if (e.key === "Enter") {
         e.preventDefault();
         searchItem(input.value);
-        setTimeout(() => input.select(), 50); // ready for next scan
+        setTimeout(() => input.select(), 50);
     }
 });
 
-window.onload = () => input.focus();
-
 function searchItem(raw) {
     const keyword = String(raw).trim().toLowerCase();
-    if (!keyword) return;
+    if (!keyword || !products.length) return;
 
-    const items = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-
-    const item = items.find(i => {
-        const barcode = String(i.barcode || "").trim().toLowerCase();
-        const name = String(i.name || "").trim().toLowerCase();
+    const item = products.find(i => {
+        const barcode = String(i.barcode || "").toLowerCase();
+        const name = String(i.name || "").toLowerCase();
         return barcode === keyword || name.includes(keyword);
     });
 
@@ -163,9 +202,9 @@ function searchItem(raw) {
     document.getElementById("sellPrice").textContent = fmt(item.sellPrice);
 }
 
-function fmt(val) {
-    if (!val || Number(val) === 0) return "";
-    return Number(val).toLocaleString(undefined, {
+function fmt(v) {
+    if (!v || Number(v) === 0) return "";
+    return Number(v).toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });
