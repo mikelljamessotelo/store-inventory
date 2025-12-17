@@ -1,831 +1,176 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Mattmat Price Check</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    :root {
-      --bg: #050505;
-      --card: #111111;
-      --card-soft: #181818;
-      --accent: #4caf50;
-      --accent-soft: #2e7d32;
-      --danger: #ff5252;
-      --text: #ffffff;
-      --muted: #bbbbbb;
-      --border: #333333;
-      --price: #ffeb3b;
-      --highlight: #00e5ff;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Price Checker</title>
 
-    * {
-      box-sizing: border-box;
-    }
-
+<style>
     body {
-      margin: 0;
-      padding: 16px;
-      background: radial-gradient(circle at top, #222 0, #000 50%, #000 100%);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+        font-family: Arial, sans-serif;
+        background: #f2f2f2;
+        margin: 0;
+        padding: 0;
+        text-align: center;
     }
 
     header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
+        background: #4CAF50;
+        color: white;
+        padding: 20px;
+        font-size: 32px;
+        font-weight: bold;
     }
 
-    h1 {
-      margin: 0;
-      font-size: clamp(20px, 3vw, 26px);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
+    .search-box {
+        margin: 20px;
     }
 
-    .sub {
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .pill {
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.12);
-      font-size: 12px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-    }
-
-    .pill span {
-      opacity: 0.8;
-    }
-
-    .pill-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #4caf50;
-      box-shadow: 0 0 8px #4caf50;
-    }
-
-    .top-bar {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .scan-row {
-      display: flex;
-      gap: 10px;
-      align-items: stretch;
-      flex-wrap: wrap;
-    }
-
-    .scan-main {
-      flex: 1 1 220px;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      background: var(--card);
-      border-radius: 14px;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-    }
-
-    .scan-label {
-      font-size: 13px;
-      color: var(--muted);
-      white-space: nowrap;
-    }
-
-    #searchInput {
-      flex: 1 1 auto;
-      border: none;
-      outline: none;
-      background: transparent;
-      color: var(--text);
-      font-size: 20px;
-      padding: 6px 4px;
-      min-width: 0;
-    }
-
-    #searchInput::placeholder {
-      color: rgba(255,255,255,0.35);
-    }
-
-    .scan-btn {
-      flex: 0 0 auto;
-      border: none;
-      border-radius: 50%;
-      width: 42px;
-      height: 42px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      cursor: pointer;
-      background: var(--accent);
-      color: #000;
-      box-shadow: 0 8px 20px rgba(76,175,80,0.4);
-      transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
-    }
-
-    .scan-btn:active {
-      transform: translateY(1px) scale(0.97);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
-    }
-
-    .quick-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .quick-buttons button {
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.03);
-      color: var(--muted);
-      padding: 6px 10px;
-      font-size: 12px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .quick-buttons button span {
-      font-size: 14px;
-    }
-
-    .quick-buttons button:active {
-      background: rgba(255,255,255,0.12);
-    }
-
-    .status-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .status-label {
-      opacity: 0.8;
-    }
-
-    .status-value {
-      color: var(--highlight);
-      font-weight: 500;
-    }
-
-    .status-error {
-      color: var(--danger);
-      font-weight: 500;
+    input {
+        width: 90%;
+        max-width: 500px;
+        font-size: 28px;
+        padding: 14px;
+        border-radius: 10px;
+        border: 2px solid #ccc;
+        text-align: center;
     }
 
     .card {
-      background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(0,0,0,0.7));
-      border-radius: 18px;
-      padding: 14px 16px;
-      border: 1px solid rgba(255,255,255,0.06);
-      box-shadow: 0 18px 40px rgba(0,0,0,0.75);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      min-height: 220px;
-    }
-
-    .item-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 10px;
+        background: white;
+        margin: 20px auto;
+        max-width: 600px;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        display: none;
     }
 
     .item-name {
-      font-size: clamp(20px, 4vw, 32px);
-      font-weight: 700;
-      letter-spacing: 0.02em;
+        font-size: 34px;
+        font-weight: bold;
+        margin-bottom: 15px;
     }
 
-    .item-meta {
-      font-size: 12px;
-      color: var(--muted);
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      text-align: right;
+    .row {
+        font-size: 26px;
+        margin: 8px 0;
+        text-align: left;
     }
 
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.18);
-      font-size: 11px;
-      background: rgba(0,0,0,0.4);
-      white-space: nowrap;
+    .label {
+        font-weight: bold;
+        color: #555;
     }
 
-    .chip-label {
-      opacity: 0.7;
-    }
-
-    .chip-value {
-      font-weight: 500;
-    }
-
-    .price-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-top: 4px;
-      margin-bottom: 6px;
-    }
-
-    .price-main {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .price-label {
-      font-size: 13px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-    }
-
-    .price-value {
-      font-size: clamp(40px, 7vw, 70px);
-      font-weight: 800;
-      color: var(--price);
-      text-shadow:
-        0 0 12px rgba(255, 235, 59, 0.8),
-        0 0 30px rgba(255, 235, 59, 0.4);
-    }
-
-    .price-sub {
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .secondary-prices {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      align-items: flex-end;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .secondary-row {
-      display: flex;
-      gap: 6px;
-      align-items: baseline;
-    }
-
-    .secondary-label {
-      opacity: 0.7;
-    }
-
-    .secondary-value {
-      font-weight: 500;
-      color: #ffffff;
-    }
-
-    .secondary-value.negative {
-      color: var(--danger);
-    }
-
-    .footer-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .footer-left {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .footer-right {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .nav-btn {
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: rgba(0,0,0,0.6);
-      color: var(--text);
-      padding: 4px 10px;
-      font-size: 14px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .nav-btn:active {
-      background: rgba(255,255,255,0.12);
-    }
-
-    .badge {
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.22);
-      padding: 2px 8px;
-      font-size: 11px;
-      background: rgba(0,0,0,0.4);
-    }
-
-    .empty-state {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      gap: 10px;
-      padding: 16px 10px;
-      color: var(--muted);
-    }
-
-    .empty-icon {
-      font-size: 38px;
-      opacity: 0.7;
-    }
-
-    .empty-title {
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    .empty-text {
-      font-size: 13px;
-      max-width: 320px;
-    }
-
-    .empty-tip {
-      font-size: 12px;
-      opacity: 0.9;
-    }
-
-    @media (max-width: 600px) {
-      body {
-        padding: 12px;
-      }
-      .card {
-        padding: 12px;
-      }
-      .price-value {
+    .price {
         font-size: 40px;
-      }
+        color: #4CAF50;
+        font-weight: bold;
+        margin-top: 15px;
+        text-align: center;
     }
-  </style>
+
+    .not-found {
+        font-size: 24px;
+        color: red;
+        margin-top: 20px;
+        display: none;
+    }
+
+    footer {
+        margin-top: 30px;
+        font-size: 14px;
+        color: #777;
+    }
+</style>
 </head>
+
 <body>
-  <header>
-    <div>
-      <h1>Mattmat Price Check</h1>
-      <div class="sub">Scan item barcode to view current shelf price</div>
-    </div>
-    <div class="pill">
-      <span class="pill-dot"></span>
-      <span>Inventory linked</span>
-    </div>
-  </header>
 
-  <section class="top-bar">
-    <div class="scan-row">
-      <div class="scan-main">
-        <div class="scan-label">Scan Barcode</div>
-        <input
-          id="searchInput"
-          type="text"
-          inputmode="numeric"
-          autocomplete="off"
-          placeholder="Place cursor here then scan..."
-        />
-        <button class="scan-btn" id="scanBtn" title="Search">
-          ⏎
-        </button>
-      </div>
-      <div class="quick-buttons">
-        <button id="btnFocus">
-          <span>🎯</span> Focus input
-        </button>
-        <button id="btnClear">
-          <span>🧹</span> Clear
-        </button>
-        <button id="btnToggleMode">
-          <span>🔍</span> Mode: Barcode
-        </button>
-      </div>
-    </div>
+<header>🧾 PRICE CHECKER</header>
 
-    <div class="status-row">
-      <div>
-        <span class="status-label">Products loaded:</span>
-        <span class="status-value" id="statusCount">–</span>
-      </div>
-      <div id="statusLast"></div>
-      <div id="statusError"></div>
-    </div>
-  </section>
+<div class="search-box">
+    <input 
+        type="text" 
+        id="searchInput" 
+        placeholder="Scan barcode or type item name"
+        autofocus
+    >
+</div>
 
-  <section class="card" id="resultCard">
-    <!-- Filled by JS -->
-    <div class="empty-state" id="emptyState">
-      <div class="empty-icon">📷</div>
-      <div class="empty-title">Ready to Scan</div>
-      <div class="empty-text">
-        Tap <strong>Focus input</strong>, then scan a barcode with your scanner.
-        The matching item will appear here with a large price display.
-      </div>
-      <div class="empty-tip">
-        Uses inventory from your main <strong>Mattmat Store Inventory</strong> page on this device.
-      </div>
-    </div>
-  </section>
+<div class="card" id="itemCard">
+    <div class="item-name" id="itemName"></div>
 
-  <script>
-    // MUST match your main system's localStorage key
-    // (from Mattmat Store Inventory)
-    const INVENTORY_KEY = 'store_inventory_v3_2_7';
+    <div class="row"><span class="label">Barcode:</span> <span id="barcode"></span></div>
+    <div class="row"><span class="label">Category:</span> <span id="category"></span></div>
+    <div class="row"><span class="label">Remarks:</span> <span id="remarks"></span></div>
 
-    let products = [];
-    let currentIndex = -1;
-    let currentResults = [];
-    let searchMode = 'barcode'; // 'barcode' or 'name'
+    <div class="row"><span class="label">Cost / Pack:</span> ₱ <span id="costPack"></span></div>
+    <div class="row"><span class="label">Cost / PC:</span> ₱ <span id="costPc"></span></div>
 
-    const searchInput = document.getElementById('searchInput');
-    const scanBtn = document.getElementById('scanBtn');
-    const statusCount = document.getElementById('statusCount');
-    const statusLast = document.getElementById('statusLast');
-    const statusError = document.getElementById('statusError');
-    const resultCard = document.getElementById('resultCard');
-    const emptyState = document.getElementById('emptyState');
-    const btnFocus = document.getElementById('btnFocus');
-    const btnClear = document.getElementById('btnClear');
-    const btnToggleMode = document.getElementById('btnToggleMode');
+    <div class="price">₱ <span id="sellPrice"></span></div>
+</div>
 
-    function loadProducts() {
-      try {
-        const raw = localStorage.getItem(INVENTORY_KEY);
-        if (!raw) {
-          statusCount.textContent = '0 (no data)';
-          statusError.innerHTML =
-            '<span class="status-error">⚠ No inventory found in this browser.</span>';
-          return;
-        }
-        const arr = JSON.parse(raw);
-        if (!Array.isArray(arr)) throw new Error('Invalid data format');
-        products = arr;
-        statusCount.textContent = products.length.toString();
-      } catch (err) {
-        console.error(err);
-        products = [];
-        statusCount.textContent = '0 (error)';
-        statusError.innerHTML =
-          '<span class="status-error">⚠ Error reading inventory data.</span>';
-      }
-    }
+<div class="not-found" id="notFound">Item not found</div>
 
-    function formatPrice(value) {
-      if (value === '' || value === null || value === undefined) return '';
-      const num = Number(value) || 0;
-      if (num === 0) return '';
-      return num.toFixed(2);
-    }
+<footer>© 2025 Mattmat Store</footer>
 
-    function nowString() {
-      const d = new Date();
-      return (
-        d.getFullYear() +
-        '-' +
-        String(d.getMonth() + 1).padStart(2, '0') +
-        '-' +
-        String(d.getDate()).padStart(2, '0') +
-        ' ' +
-        String(d.getHours()).padStart(2, '0') +
-        ':' +
-        String(d.getMinutes()).padStart(2, '0')
-      );
-    }
+<script>
+/*
+ IMPORTANT:
+ Change `inventoryData` below if your system uses a different key.
+ Expected item fields:
+ name, barcode, category, remarks, costPack, costPc, sellPrice
+*/
 
-    function search() {
-      const query = (searchInput.value || '').trim();
-      statusError.textContent = '';
+const STORAGE_KEY = "inventoryData";
 
-      if (!query) {
-        showEmpty();
+const input = document.getElementById("searchInput");
+const card = document.getElementById("itemCard");
+const notFound = document.getElementById("notFound");
+
+input.addEventListener("input", () => {
+    const keyword = input.value.trim().toLowerCase();
+    if (!keyword) {
+        card.style.display = "none";
+        notFound.style.display = "none";
         return;
-      }
+    }
 
-      if (!products.length) {
-        statusError.innerHTML =
-          '<span class="status-error">⚠ No inventory data loaded.</span>';
-        showEmpty();
+    const items = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+
+    const item = items.find(i =>
+        (i.barcode && i.barcode.toLowerCase() === keyword) ||
+        (i.name && i.name.toLowerCase().includes(keyword))
+    );
+
+    if (!item) {
+        card.style.display = "none";
+        notFound.style.display = "block";
         return;
-      }
-
-      let matches;
-      if (searchMode === 'barcode') {
-        // Exact barcode match first
-        matches = products.filter(
-          p => String(p.barcode || '').trim() === query
-        );
-        // If nothing, try contains
-        if (!matches.length) {
-          matches = products.filter(
-            p => String(p.barcode || '').includes(query)
-          );
-        }
-      } else {
-        const qLower = query.toLowerCase();
-        matches = products.filter(
-          p =>
-            String(p.name || '').toLowerCase().includes(qLower) ||
-            String(p.category || '').toLowerCase().includes(qLower)
-        );
-      }
-
-      currentResults = matches;
-      currentIndex = matches.length ? 0 : -1;
-
-      if (!matches.length) {
-        renderNoMatch(query);
-      } else {
-        renderItem(matches[0], 0, matches.length);
-      }
-
-      statusLast.innerHTML =
-        '<span class="status-label">Last search:</span> ' +
-        '<span class="status-value">' +
-        query +
-        '</span>' +
-        ' · ' +
-        '<span class="status-label">' +
-        nowString() +
-        '</span>';
     }
 
-    function showEmpty() {
-      resultCard.innerHTML = '';
-      resultCard.appendChild(emptyState);
-      emptyState.style.display = 'flex';
-    }
+    notFound.style.display = "none";
+    card.style.display = "block";
 
-    function renderNoMatch(query) {
-      resultCard.innerHTML = '';
-      const container = document.createElement('div');
-      container.className = 'empty-state';
-      container.innerHTML = `
-        <div class="empty-icon">❓</div>
-        <div class="empty-title">No Item Found</div>
-        <div class="empty-text">
-          No product matches <strong>${escapeHtml(query)}</strong> in the
-          ${searchMode === 'barcode' ? 'Barcode' : 'Name/Category'} field.
-        </div>
-        <div class="empty-tip">
-          Try another code or check if the item exists in the main inventory.
-        </div>
-      `;
-      resultCard.appendChild(container);
-    }
+    document.getElementById("itemName").textContent = item.name || "";
+    document.getElementById("barcode").textContent = item.barcode || "-";
+    document.getElementById("category").textContent = item.category || "-";
+    document.getElementById("remarks").textContent = item.remarks || "-";
+    document.getElementById("costPack").textContent = format(item.costPack);
+    document.getElementById("costPc").textContent = format(item.costPc);
+    document.getElementById("sellPrice").textContent = format(item.sellPrice);
 
-    function renderItem(item, index, total) {
-      const sell = item.sellPrice;
-      const sellDisplay = formatPrice(sell);
-      const cost = item.cost;
-      const suggested = item.suggestedSellPrice;
-      const markup = item.markup;
+    // Auto-clear for next scan
+    setTimeout(() => input.select(), 50);
+});
 
-      const category = item.category || '';
-      const barcode = item.barcode || '';
-      const remarks = item.remarks || '';
-      const name = item.name || '';
+function format(val) {
+    if (!val || Number(val) === 0) return "";
+    return Number(val).toLocaleString(undefined, { minimumFractionDigits: 2 });
+}
+</script>
 
-      const hasPrice = sellDisplay !== '';
-
-      resultCard.innerHTML = '';
-
-      const wrapper = document.createElement('div');
-      wrapper.style.display = 'flex';
-      wrapper.style.flexDirection = 'column';
-      wrapper.style.gap = '8px';
-      wrapper.style.height = '100%';
-
-      const header = document.createElement('div');
-      header.className = 'item-header';
-      header.innerHTML = `
-        <div class="item-name">${escapeHtml(name) || '<span style="color:var(--muted);font-size:16px">Unnamed item</span>'}</div>
-        <div class="item-meta">
-          <div class="chip">
-            <span class="chip-label">Barcode</span>
-            <span class="chip-value">${barcode ? escapeHtml(barcode) : '—'}</span>
-          </div>
-          ${
-            category
-              ? `<div class="chip">
-                  <span class="chip-label">Category</span>
-                  <span class="chip-value">${escapeHtml(category)}</span>
-                </div>`
-              : ''
-          }
-          ${
-            remarks
-              ? `<div class="chip">
-                  <span class="chip-label">Remarks</span>
-                  <span class="chip-value">${escapeHtml(remarks)}</span>
-                </div>`
-              : ''
-          }
-        </div>
-      `;
-
-      const priceRow = document.createElement('div');
-      priceRow.className = 'price-row';
-      priceRow.innerHTML = `
-        <div class="price-main">
-          <div class="price-label">Shelf Price</div>
-          <div class="price-value">
-            ${
-              hasPrice
-                ? '₱ ' + sellDisplay
-                : '<span style="font-size:18px;color:var(--danger);">NO PRICE SET</span>'
-            }
-          </div>
-          <div class="price-sub">
-            ${
-              hasPrice
-                ? 'Tap to rescan to confirm current price.'
-                : 'Set a Sell Price in the main inventory system.'
-            }
-          </div>
-        </div>
-        <div class="secondary-prices">
-          <div class="secondary-row">
-            <div class="secondary-label">Cost:</div>
-            <div class="secondary-value">${
-              cost !== undefined && cost !== null
-                ? '₱ ' + (Number(cost) || 0).toFixed(4)
-                : '—'
-            }</div>
-          </div>
-          <div class="secondary-row">
-            <div class="secondary-label">Suggested:</div>
-            <div class="secondary-value">${
-              suggested !== undefined && suggested !== null
-                ? '₱ ' + (Number(suggested) || 0).toFixed(2)
-                : '—'
-            }</div>
-          </div>
-          <div class="secondary-row">
-            <div class="secondary-label">Markup:</div>
-            <div class="secondary-value ${
-              markup !== undefined && Number(markup) < 0 ? 'negative' : ''
-            }">
-              ${
-                markup !== undefined && markup !== null
-                  ? '₱ ' + (Number(markup) || 0).toFixed(2)
-                  : '—'
-              }
-            </div>
-          </div>
-        </div>
-      `;
-
-      const footer = document.createElement('div');
-      footer.className = 'footer-row';
-      footer.innerHTML = `
-        <div class="footer-left">
-          <div class="badge">Result ${index + 1} of ${total}</div>
-          <div>Search mode: ${
-            searchMode === 'barcode' ? 'Barcode' : 'Name/Category'
-          }</div>
-        </div>
-        <div class="footer-right">
-          <button class="nav-btn" id="prevBtn">← Prev</button>
-          <button class="nav-btn" id="nextBtn">Next →</button>
-        </div>
-      `;
-
-      wrapper.appendChild(header);
-      wrapper.appendChild(priceRow);
-      wrapper.appendChild(footer);
-
-      resultCard.appendChild(wrapper);
-
-      const prevBtn = document.getElementById('prevBtn');
-      const nextBtn = document.getElementById('nextBtn');
-
-      prevBtn.onclick = () => {
-        if (!currentResults.length) return;
-        currentIndex = (currentIndex - 1 + currentResults.length) % currentResults.length;
-        renderItem(
-          currentResults[currentIndex],
-          currentIndex,
-          currentResults.length
-        );
-      };
-
-      nextBtn.onclick = () => {
-        if (!currentResults.length) return;
-        currentIndex = (currentIndex + 1) % currentResults.length;
-        renderItem(
-          currentResults[currentIndex],
-          currentIndex,
-          currentResults.length
-        );
-      };
-    }
-
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-    }
-
-    // --- Event wiring ---
-    window.addEventListener('load', () => {
-      loadProducts();
-      // focus after a short delay (helps on iPad)
-      setTimeout(() => {
-        try { searchInput.focus(); searchInput.select(); } catch (_) {}
-      }, 300);
-    });
-
-    scanBtn.addEventListener('click', () => {
-      search();
-      // prepare for next scan
-      setTimeout(() => {
-        try { searchInput.focus(); searchInput.select(); } catch (_) {}
-      }, 10);
-    });
-
-    searchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        search();
-        // scanners usually send Enter, so re-focus for next scan
-        setTimeout(() => {
-          try { searchInput.focus(); searchInput.select(); } catch (_) {}
-        }, 10);
-      }
-    });
-
-    btnFocus.addEventListener('click', () => {
-      try {
-        searchInput.focus();
-        searchInput.select();
-      } catch (_) {}
-    });
-
-    btnClear.addEventListener('click', () => {
-      searchInput.value = '';
-      statusError.textContent = '';
-      showEmpty();
-      try {
-        searchInput.focus();
-      } catch (_) {}
-    });
-
-    btnToggleMode.addEventListener('click', () => {
-      searchMode = searchMode === 'barcode' ? 'name' : 'barcode';
-      btnToggleMode.innerHTML =
-        '<span>🔍</span> Mode: ' +
-        (searchMode === 'barcode' ? 'Barcode' : 'Name');
-      // automatically re-search with new mode
-      if ((searchInput.value || '').trim() !== '') {
-        search();
-      }
-    });
-  </script>
 </body>
 </html>
