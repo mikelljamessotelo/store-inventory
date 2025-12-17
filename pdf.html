@@ -102,12 +102,15 @@
     }
   </style>
 </head>
+
 <body>
   <div class="wrap">
     <h1>Mattmat Purchase — Text Copy</h1>
     <div class="note">
-      Uses items marked for purchase in your main inventory (checked items).<br>
-      Format: <code>***CATEGORY***</code> then <code>- Item</code>
+      Uses checked items from inventory<br>
+      Categories: ALL CAPS<br>
+      Items: Capitalized Each Word<br>
+      Max 32 chars per line, no word cutting
     </div>
 
     <div class="buttons">
@@ -121,112 +124,141 @@
   </div>
 
   <script>
-  const KEY = 'store_inventory_v3_2_7';
-  const MAX_CHARS = 32;
+    /* ================= SETTINGS ================= */
+    const KEY = 'store_inventory_v3_2_7';
+    const MAX_CHARS = 32;
 
-  const outputEl = document.getElementById('output');
-  const statusEl = document.getElementById('status');
-  const copyBtn = document.getElementById('copyBtn');
-  const refreshBtn = document.getElementById('refreshBtn');
+    const outputEl = document.getElementById('output');
+    const statusEl = document.getElementById('status');
+    const copyBtn = document.getElementById('copyBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
 
-  function loadProductsFromLocalStorage() {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (!raw) return [];
-      const data = JSON.parse(raw);
-      return Array.isArray(data) ? data : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function escapePlain(str) {
-    return String(str ?? "")
-      .replace(/\r\n/g, "\n")
-      .replace(/\r/g, "\n");
-  }
-
-  /* ---- 32 CHAR LINE WRAPPER ---- */
-  function wrapLine(text, prefix = '') {
-    const words = text.split(' ');
-    const lines = [];
-    let current = prefix;
-
-    words.forEach(word => {
-      if ((current + (current.trim() ? ' ' : '') + word).length > MAX_CHARS) {
-        lines.push(current.padEnd(0));
-        current = prefix + word;
-      } else {
-        current += (current.trim() ? ' ' : '') + word;
+    /* ================= HELPERS ================= */
+    function loadProductsFromLocalStorage() {
+      try {
+        const raw = localStorage.getItem(KEY);
+        if (!raw) return [];
+        const data = JSON.parse(raw);
+        return Array.isArray(data) ? data : [];
+      } catch {
+        return [];
       }
-    });
-
-    if (current.trim()) lines.push(current);
-    return lines;
-  }
-
-  function buildText() {
-    const products = loadProductsFromLocalStorage();
-    if (!products.length) {
-      statusEl.textContent = 'No products found.';
-      outputEl.value = '';
-      return;
     }
 
-    const checked = products.filter(p => p && p.checked);
-    if (!checked.length) {
-      statusEl.textContent = 'No items checked for purchase.';
-      outputEl.value = '';
-      return;
+    function escapePlain(str) {
+      return String(str ?? "")
+        .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n")
+        .trim();
     }
 
-    const groups = new Map();
-    checked.forEach(item => {
-      const cat = item.category?.trim() || 'UNCATEGORIZED';
-      const name = item.name?.trim();
-      if (!name) return;
-      if (!groups.has(cat)) groups.set(cat, []);
-      groups.get(cat).push(name);
-    });
+    /* Capitalize First Letter Of Each Word */
+    function titleCase(str) {
+      return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    }
 
-    let lines = [];
+    /* ---- WORD-SAFE LINE WRAPPER (NO CUTTING) ---- */
+    function wrapLine(text, prefix = '') {
+      const words = text.split(' ');
+      const lines = [];
+      let current = prefix;
 
-    for (const [cat, items] of groups.entries()) {
-      const header = `***${escapePlain(cat).toUpperCase()}***`;
-      wrapLine(header).forEach(l => lines.push(l));
+      words.forEach(word => {
+        if ((prefix + word).length > MAX_CHARS) {
+          if (current.trim()) {
+            lines.push(current);
+            current = prefix;
+          }
+          lines.push(prefix + word);
+          return;
+        }
 
-      items.forEach(name => {
-        wrapLine(escapePlain(name), '- ').forEach(l => lines.push(l));
+        const next = current.trim()
+          ? current + ' ' + word
+          : current + word;
+
+        if (next.length > MAX_CHARS) {
+          lines.push(current);
+          current = prefix + word;
+        } else {
+          current = next;
+        }
       });
 
-      lines.push('');
+      if (current.trim()) lines.push(current);
+      return lines;
     }
 
-    outputEl.value = lines.join('\n');
-    statusEl.textContent =
-      `Loaded ${checked.length} item(s) in ${groups.size} categor(y/ies).`;
-  }
+    /* ================= BUILD TEXT ================= */
+    function buildText() {
+      const products = loadProductsFromLocalStorage();
 
-  async function copyText() {
-    const text = outputEl.value || '';
-    if (!text.trim()) {
-      statusEl.textContent = 'Nothing to copy.';
-      return;
+      if (!products.length) {
+        statusEl.textContent = 'No products found in localStorage.';
+        outputEl.value = '';
+        return;
+      }
+
+      const checked = products.filter(p => p && p.checked);
+      if (!checked.length) {
+        statusEl.textContent = 'No items checked for purchase.';
+        outputEl.value = '';
+        return;
+      }
+
+      const groups = new Map();
+      checked.forEach(item => {
+        const cat = item.category?.toString().trim() || 'UNCATEGORIZED';
+        const name = item.name?.toString().trim();
+        if (!name) return;
+
+        if (!groups.has(cat)) groups.set(cat, []);
+        groups.get(cat).push(name);
+      });
+
+      let lines = [];
+
+      for (const [cat, items] of groups.entries()) {
+        const header =
+          `***${escapePlain(cat).toUpperCase()}***`;
+        wrapLine(header).forEach(l => lines.push(l));
+
+        items.forEach(name => {
+          const formattedName = titleCase(escapePlain(name));
+          wrapLine(formattedName, '- ')
+            .forEach(l => lines.push(l));
+        });
+
+        lines.push('');
+      }
+
+      outputEl.value = lines.join('\n');
+      statusEl.textContent =
+        `Loaded ${checked.length} item(s) in ${groups.size} categor(y/ies).`;
     }
 
-    try {
-      await navigator.clipboard.writeText(text);
-      statusEl.textContent = 'Copied to clipboard ✅';
-    } catch {
-      outputEl.select();
-      document.execCommand('copy');
-      statusEl.textContent = 'Copied (fallback)';
-    }
-  }
+    /* ================= COPY ================= */
+    async function copyText() {
+      const text = outputEl.value || '';
+      if (!text.trim()) {
+        statusEl.textContent = 'Nothing to copy.';
+        return;
+      }
 
-  copyBtn.addEventListener('click', copyText);
-  refreshBtn.addEventListener('click', buildText);
-  window.addEventListener('load', buildText);
-</script>
+      try {
+        await navigator.clipboard.writeText(text);
+        statusEl.textContent = 'Copied to clipboard ✅';
+      } catch {
+        outputEl.focus();
+        outputEl.select();
+        document.execCommand('copy');
+        statusEl.textContent = 'Copied (fallback)';
+      }
+    }
+
+    copyBtn.addEventListener('click', copyText);
+    refreshBtn.addEventListener('click', buildText);
+    window.addEventListener('load', buildText);
+  </script>
 </body>
 </html>
