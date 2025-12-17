@@ -16,9 +16,9 @@
 
     header {
         background: #4CAF50;
-        color: white;
-        padding: 20px;
-        font-size: 32px;
+        color: #fff;
+        padding: 22px;
+        font-size: 34px;
         font-weight: bold;
     }
 
@@ -27,34 +27,35 @@
     }
 
     input {
-        width: 90%;
-        max-width: 500px;
-        font-size: 28px;
-        padding: 14px;
-        border-radius: 10px;
-        border: 2px solid #ccc;
+        width: 94%;
+        max-width: 650px;
+        font-size: 32px;
+        padding: 18px;
+        border-radius: 14px;
+        border: 2px solid #bbb;
         text-align: center;
+        outline: none;
     }
 
     .card {
-        background: white;
-        margin: 20px auto;
-        max-width: 600px;
-        padding: 25px;
-        border-radius: 15px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        background: #fff;
+        margin: 24px auto;
+        max-width: 680px;
+        padding: 30px;
+        border-radius: 18px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         display: none;
     }
 
     .item-name {
-        font-size: 34px;
+        font-size: 38px;
         font-weight: bold;
-        margin-bottom: 15px;
+        margin-bottom: 18px;
     }
 
     .row {
         font-size: 26px;
-        margin: 8px 0;
+        margin: 10px 0;
         text-align: left;
     }
 
@@ -64,17 +65,17 @@
     }
 
     .price {
-        font-size: 40px;
+        font-size: 44px;
         color: #4CAF50;
         font-weight: bold;
-        margin-top: 15px;
+        margin-top: 20px;
         text-align: center;
     }
 
     .not-found {
-        font-size: 24px;
+        font-size: 26px;
         color: red;
-        margin-top: 20px;
+        margin-top: 22px;
         display: none;
     }
 
@@ -91,11 +92,12 @@
 <header>🧾 PRICE CHECKER</header>
 
 <div class="search-box">
-    <input 
-        type="text" 
-        id="searchInput" 
+    <input
+        type="text"
+        id="searchInput"
         placeholder="Scan barcode or type item name"
         autofocus
+        inputmode="numeric"
     >
 </div>
 
@@ -117,32 +119,37 @@
 <footer>© 2025 Mattmat Store</footer>
 
 <script>
-/*
- IMPORTANT:
- Change `inventoryData` below if your system uses a different key.
- Expected item fields:
- name, barcode, category, remarks, costPack, costPc, sellPrice
-*/
-
-const STORAGE_KEY = "inventoryData";
+/* SAME STORAGE AS YOUR INVENTORY SYSTEM */
+const STORAGE_KEY = "products";
 
 const input = document.getElementById("searchInput");
 const card = document.getElementById("itemCard");
 const notFound = document.getElementById("notFound");
 
+input.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        searchItem(input.value.trim());
+        setTimeout(() => input.select(), 50); // auto-select for re-scan
+    }
+});
+
 input.addEventListener("input", () => {
-    const keyword = input.value.trim().toLowerCase();
-    if (!keyword) {
+    if (!input.value.trim()) {
         card.style.display = "none";
         notFound.style.display = "none";
-        return;
     }
+});
+
+function searchItem(keyword) {
+    if (!keyword) return;
 
     const items = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    const key = keyword.toLowerCase();
 
     const item = items.find(i =>
-        (i.barcode && i.barcode.toLowerCase() === keyword) ||
-        (i.name && i.name.toLowerCase().includes(keyword))
+        (i.barcode && i.barcode.toLowerCase() === key) ||
+        (i.name && i.name.toLowerCase().includes(key))
     );
 
     if (!item) {
@@ -158,18 +165,21 @@ input.addEventListener("input", () => {
     document.getElementById("barcode").textContent = item.barcode || "-";
     document.getElementById("category").textContent = item.category || "-";
     document.getElementById("remarks").textContent = item.remarks || "-";
-    document.getElementById("costPack").textContent = format(item.costPack);
+    document.getElementById("costPack").textContent = format(item.cost);
     document.getElementById("costPc").textContent = format(item.costPc);
     document.getElementById("sellPrice").textContent = format(item.sellPrice);
-
-    // Auto-clear for next scan
-    setTimeout(() => input.select(), 50);
-});
+}
 
 function format(val) {
     if (!val || Number(val) === 0) return "";
-    return Number(val).toLocaleString(undefined, { minimumFractionDigits: 2 });
+    return Number(val).toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
 }
+
+/* Always keep focus ready for scanner */
+window.onload = () => input.focus();
 </script>
 
 </body>
