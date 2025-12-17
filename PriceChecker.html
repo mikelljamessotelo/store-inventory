@@ -12,111 +12,134 @@ body{
   margin:0;
   padding:0;
 }
+
+/* HEADER */
 header{
   background:#2e7d32;
   color:#fff;
-  padding:18px;
-  font-size:28px;
-  font-weight:700;
+  padding:22px;
+  font-size:34px;
+  font-weight:800;
   text-align:center;
 }
+
+/* LAYOUT */
 .container{
-  max-width:720px;
-  margin:20px auto;
-  padding:0 14px;
+  max-width:860px;
+  margin:24px auto;
+  padding:0 16px;
 }
+
+/* SEARCH */
 .search input{
   width:100%;
-  font-size:26px;
-  padding:14px;
-  border-radius:10px;
-  border:2px solid #bbb;
+  font-size:32px;
+  padding:18px;
+  border-radius:12px;
+  border:2px solid #aaa;
   text-align:center;
+  font-weight:700;
 }
+
+/* CARD */
 .card{
   background:#fff;
-  margin-top:18px;
-  padding:20px;
-  border-radius:14px;
-  box-shadow:0 4px 12px rgba(0,0,0,.18);
+  margin-top:22px;
+  padding:26px;
+  border-radius:16px;
+  box-shadow:0 6px 18px rgba(0,0,0,.18);
   display:none;
 }
 
 /* ITEM NAME + SELL PRICE */
 .item-name{
-  font-size:34px;
-  font-weight:700;
-  color:#000;
-  margin-bottom:6px;
-}
-.sell-big{
-  font-size:40px;
+  font-size:42px;
   font-weight:800;
+  color:#000;
+  margin-bottom:8px;
+}
+
+.sell-big{
+  font-size:52px;
+  font-weight:900;
   background:#ffeb3b;
   color:#000;
-  padding:10px;
-  border-radius:10px;
+  padding:14px;
+  border-radius:12px;
   text-align:center;
-  margin-bottom:16px;
+  margin-bottom:22px;
 }
 
 /* TABLE FORM */
 .form-table{
   width:100%;
   border-collapse:separate;
-  border-spacing:0 10px;
+  border-spacing:0 14px;
 }
+
 .form-table td{
-  font-size:20px;
+  font-size:24px;
   vertical-align:middle;
 }
+
 .form-table .label{
-  width:40%;
-  font-weight:600;
+  width:42%;
+  font-weight:700;
   color:#444;
 }
+
+/* INPUTS */
 .form-table input{
   width:100%;
-  font-size:20px;
-  padding:8px 10px;
-  border-radius:8px;
-  border:1px solid #bbb;
-  text-align:right;
+  font-size:24px;
+  padding:12px 14px;
+  border-radius:10px;
+  border:1px solid #999;
+  text-align:left;        /* LEFT aligned */
+  font-weight:800;        /* BOLD */
 }
+
 .readonly{
-  font-weight:600;
+  font-weight:800;
+  font-size:24px;
 }
 
 /* BUTTONS */
 .btn-row{
   display:flex;
-  gap:10px;
-  margin-top:20px;
+  gap:14px;
+  margin-top:26px;
 }
+
 button{
   flex:1;
-  padding:14px;
-  font-size:18px;
+  padding:18px;
+  font-size:22px;
   border:none;
-  border-radius:10px;
+  border-radius:12px;
   cursor:pointer;
+  font-weight:800;
 }
-.btn-save{background:#4caf50;color:#fff;font-weight:700}
+
+.btn-save{background:#4caf50;color:#fff}
 .btn-dup{background:#1976d2;color:#fff}
 .btn-cancel{background:#e0e0e0}
 
+/* NOT FOUND */
 .not-found{
-  margin-top:20px;
+  margin-top:24px;
   text-align:center;
-  font-size:22px;
+  font-size:26px;
   color:#d32f2f;
   display:none;
 }
+
+/* FOOTER */
 footer{
   text-align:center;
-  font-size:13px;
+  font-size:15px;
   color:#777;
-  margin:20px 0;
+  margin:22px 0;
 }
 </style>
 </head>
@@ -140,11 +163,11 @@ footer{
     <table class="form-table">
       <tr>
         <td class="label">Barcode</td>
-        <td><span id="barcode"></span></td>
+        <td class="readonly" id="barcode"></td>
       </tr>
       <tr>
         <td class="label">Category</td>
-        <td><span id="category"></span></td>
+        <td class="readonly" id="category"></td>
       </tr>
       <tr>
         <td class="label">Packs</td>
