@@ -107,10 +107,9 @@
   <div class="wrap">
     <h1>Mattmat Purchase — Text Copy</h1>
     <div class="note">
-      Uses checked items from inventory<br>
       Categories: ALL CAPS<br>
       Items: Capitalized Each Word<br>
-      Max 32 chars per line, no word cutting
+      32 chars per line • No word cutting • No dash on wrap
     </div>
 
     <div class="buttons">
@@ -120,113 +119,83 @@
 
     <div id="status"></div>
 
-    <textarea id="output" readonly placeholder="No data yet..."></textarea>
+    <textarea id="output" readonly></textarea>
   </div>
 
   <script>
-    /* ================= SETTINGS ================= */
     const KEY = 'store_inventory_v3_2_7';
     const MAX_CHARS = 32;
 
     const outputEl = document.getElementById('output');
     const statusEl = document.getElementById('status');
-    const copyBtn = document.getElementById('copyBtn');
-    const refreshBtn = document.getElementById('refreshBtn');
 
-    /* ================= HELPERS ================= */
     function loadProductsFromLocalStorage() {
       try {
         const raw = localStorage.getItem(KEY);
-        if (!raw) return [];
-        const data = JSON.parse(raw);
-        return Array.isArray(data) ? data : [];
+        return raw ? JSON.parse(raw) : [];
       } catch {
         return [];
       }
     }
 
-    function escapePlain(str) {
-      return String(str ?? "")
-        .replace(/\r\n/g, "\n")
-        .replace(/\r/g, "\n")
-        .trim();
-    }
-
-    /* Capitalize First Letter Of Each Word */
     function titleCase(str) {
       return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
     }
 
-    /* ---- WORD-SAFE LINE WRAPPER (NO CUTTING) ---- */
-    function wrapLine(text, prefix = '') {
+    /* ---- WORD SAFE WRAPPER ---- */
+    function wrapItemLine(text) {
       const words = text.split(' ');
       const lines = [];
-      let current = prefix;
+      let current = '';
 
       words.forEach(word => {
-        if ((prefix + word).length > MAX_CHARS) {
-          if (current.trim()) {
-            lines.push(current);
-            current = prefix;
-          }
-          lines.push(prefix + word);
-          return;
-        }
-
-        const next = current.trim()
-          ? current + ' ' + word
-          : current + word;
-
-        if (next.length > MAX_CHARS) {
+        if ((current ? current + ' ' : '') + word.length > MAX_CHARS) {
           lines.push(current);
-          current = prefix + word;
+          current = word;
         } else {
-          current = next;
+          current = current ? current + ' ' + word : word;
         }
       });
 
-      if (current.trim()) lines.push(current);
+      if (current) lines.push(current);
       return lines;
     }
 
-    /* ================= BUILD TEXT ================= */
     function buildText() {
       const products = loadProductsFromLocalStorage();
-
-      if (!products.length) {
-        statusEl.textContent = 'No products found in localStorage.';
-        outputEl.value = '';
-        return;
-      }
-
       const checked = products.filter(p => p && p.checked);
+
       if (!checked.length) {
-        statusEl.textContent = 'No items checked for purchase.';
         outputEl.value = '';
+        statusEl.textContent = 'No checked items.';
         return;
       }
 
       const groups = new Map();
-      checked.forEach(item => {
-        const cat = item.category?.toString().trim() || 'UNCATEGORIZED';
-        const name = item.name?.toString().trim();
-        if (!name) return;
 
+      checked.forEach(p => {
+        const cat = p.category?.trim() || 'UNCATEGORIZED';
+        const name = p.name?.trim();
+        if (!name) return;
         if (!groups.has(cat)) groups.set(cat, []);
-        groups.get(cat).push(name);
+        groups.get(cat).push(titleCase(name));
       });
 
       let lines = [];
 
       for (const [cat, items] of groups.entries()) {
-        const header =
-          `***${escapePlain(cat).toUpperCase()}***`;
-        wrapLine(header).forEach(l => lines.push(l));
+        lines.push(`***${cat.toUpperCase()}***`);
 
-        items.forEach(name => {
-          const formattedName = titleCase(escapePlain(name));
-          wrapLine(formattedName, '- ')
-            .forEach(l => lines.push(l));
+        items.forEach(item => {
+          const wrapped = wrapItemLine(item);
+
+          wrapped.forEach((line, i) => {
+            if (i === 0) {
+              lines.push(`- ${line}`);
+            } else {
+              lines.push(`  ${line}`); // indent, no dash
+            }
+          });
         });
 
         lines.push('');
@@ -237,28 +206,13 @@
         `Loaded ${checked.length} item(s) in ${groups.size} categor(y/ies).`;
     }
 
-    /* ================= COPY ================= */
-    async function copyText() {
-      const text = outputEl.value || '';
-      if (!text.trim()) {
-        statusEl.textContent = 'Nothing to copy.';
-        return;
-      }
+    document.getElementById('copyBtn').onclick = async () => {
+      await navigator.clipboard.writeText(outputEl.value);
+      statusEl.textContent = 'Copied to clipboard ✅';
+    };
 
-      try {
-        await navigator.clipboard.writeText(text);
-        statusEl.textContent = 'Copied to clipboard ✅';
-      } catch {
-        outputEl.focus();
-        outputEl.select();
-        document.execCommand('copy');
-        statusEl.textContent = 'Copied (fallback)';
-      }
-    }
-
-    copyBtn.addEventListener('click', copyText);
-    refreshBtn.addEventListener('click', buildText);
-    window.addEventListener('load', buildText);
+    document.getElementById('refreshBtn').onclick = buildText;
+    window.onload = buildText;
   </script>
 </body>
 </html>
