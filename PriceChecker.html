@@ -7,84 +7,117 @@
 
 <style>
 body{
-    font-family: system-ui,-apple-system,Arial,sans-serif;
-    background:#f2f2f2;
-    margin:0;
-    text-align:center;
+  font-family: system-ui,-apple-system,Arial,sans-serif;
+  background:#f2f2f2;
+  margin:0;
+  padding:0;
 }
 header{
-    background:#2e7d32;
-    color:#fff;
-    padding:20px;
-    font-size:32px;
-    font-weight:700;
+  background:#2e7d32;
+  color:#fff;
+  padding:18px;
+  font-size:28px;
+  font-weight:700;
+  text-align:center;
 }
-.search-box{margin:20px}
-input[type=text],input[type=number]{
-    width:94%;
-    max-width:650px;
-    font-size:28px;
-    padding:16px;
-    border-radius:12px;
-    border:2px solid #bbb;
-    text-align:center;
+.container{
+  max-width:720px;
+  margin:20px auto;
+  padding:0 14px;
+}
+.search input{
+  width:100%;
+  font-size:26px;
+  padding:14px;
+  border-radius:10px;
+  border:2px solid #bbb;
+  text-align:center;
 }
 .card{
-    background:#fff;
-    margin:20px auto;
-    max-width:700px;
-    padding:24px;
-    border-radius:16px;
-    box-shadow:0 4px 12px rgba(0,0,0,.2);
-    display:none;
+  background:#fff;
+  margin-top:18px;
+  padding:20px;
+  border-radius:14px;
+  box-shadow:0 4px 12px rgba(0,0,0,.18);
+  display:none;
 }
+
+/* ITEM NAME + SELL PRICE */
 .item-name{
-    font-size:36px;
-    font-weight:700;
-    margin-bottom:14px;
+  font-size:34px;
+  font-weight:700;
+  color:#000;
+  margin-bottom:6px;
 }
-.row{
-    font-size:24px;
-    margin:10px 0;
-    text-align:left;
+.sell-big{
+  font-size:40px;
+  font-weight:800;
+  background:#ffeb3b;
+  color:#000;
+  padding:10px;
+  border-radius:10px;
+  text-align:center;
+  margin-bottom:16px;
 }
-.label{font-weight:600;color:#444}
-.row input{
-    font-size:22px;
-    padding:6px 10px;
-    width:160px;
-    text-align:right;
+
+/* TABLE FORM */
+.form-table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0 10px;
 }
-.price{
-    font-size:40px;
-    color:#2e7d32;
-    font-weight:700;
-    margin-top:14px;
+.form-table td{
+  font-size:20px;
+  vertical-align:middle;
 }
+.form-table .label{
+  width:40%;
+  font-weight:600;
+  color:#444;
+}
+.form-table input{
+  width:100%;
+  font-size:20px;
+  padding:8px 10px;
+  border-radius:8px;
+  border:1px solid #bbb;
+  text-align:right;
+}
+.readonly{
+  font-weight:600;
+}
+
+/* BUTTONS */
 .btn-row{
-    display:flex;
-    gap:10px;
-    margin-top:18px;
-    flex-wrap:wrap;
+  display:flex;
+  gap:10px;
+  margin-top:20px;
 }
 button{
-    flex:1 1 0;
-    padding:14px;
-    font-size:18px;
-    border-radius:10px;
-    border:none;
-    cursor:pointer;
+  flex:1;
+  padding:14px;
+  font-size:18px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
 }
-.btn-save{background:#4caf50;color:#fff}
+.btn-save{background:#4caf50;color:#fff;font-weight:700}
 .btn-dup{background:#1976d2;color:#fff}
 .btn-cancel{background:#e0e0e0}
+
 .not-found{
-    font-size:24px;
-    color:#d32f2f;
-    margin-top:20px;
-    display:none;
+  margin-top:20px;
+  text-align:center;
+  font-size:22px;
+  color:#d32f2f;
+  display:none;
 }
-footer{margin:24px;font-size:14px;color:#777}
+footer{
+  text-align:center;
+  font-size:13px;
+  color:#777;
+  margin:20px 0;
+}
 </style>
 </head>
 
@@ -92,181 +125,165 @@ footer{margin:24px;font-size:14px;color:#777}
 
 <header>🧾 PRICE CHECKER / QUICK EDIT</header>
 
-<div class="search-box">
+<div class="container">
+
+  <div class="search">
     <input id="searchInput" type="text"
            placeholder="Scan barcode or type item name"
            autofocus>
-</div>
+  </div>
 
-<div class="card" id="itemCard">
+  <div class="card" id="itemCard">
     <div class="item-name" id="itemName"></div>
+    <div class="sell-big">₱ <span id="sellBig"></span></div>
 
-    <div class="row"><span class="label">Barcode:</span> <span id="barcode"></span></div>
-    <div class="row"><span class="label">Category:</span> <span id="category"></span></div>
-
-    <div class="row">
-        <span class="label">Packs:</span>
-        <input id="packs" type="number" min="0">
-    </div>
-
-    <div class="row">
-        <span class="label">Pcs / Pack:</span>
-        <input id="pcs" type="number" min="1">
-    </div>
-
-    <div class="row">
-        <span class="label">Cost / Pack:</span>
-        <input id="costPack" type="number" min="0" step="any">
-    </div>
-
-    <div class="row">
-        <span class="label">Cost / PC:</span>
-        ₱ <span id="costPc"></span>
-    </div>
-
-    <div class="row">
-        <span class="label">Sell Price:</span>
-        <input id="sellPrice" type="number" min="0" step="any">
-    </div>
-
-    <div class="row">
-        <span class="label">Remarks:</span>
-        <input id="remarks" type="text">
-    </div>
-
-    <div class="price">₱ <span id="sellDisplay"></span></div>
+    <table class="form-table">
+      <tr>
+        <td class="label">Barcode</td>
+        <td><span id="barcode"></span></td>
+      </tr>
+      <tr>
+        <td class="label">Category</td>
+        <td><span id="category"></span></td>
+      </tr>
+      <tr>
+        <td class="label">Packs</td>
+        <td><input id="packs" type="number" min="0"></td>
+      </tr>
+      <tr>
+        <td class="label">Pcs / Pack</td>
+        <td><input id="pcs" type="number" min="1"></td>
+      </tr>
+      <tr>
+        <td class="label">Cost / Pack</td>
+        <td><input id="costPack" type="number" min="0" step="any"></td>
+      </tr>
+      <tr>
+        <td class="label">Cost / PC</td>
+        <td class="readonly">₱ <span id="costPc"></span></td>
+      </tr>
+      <tr>
+        <td class="label">Sell Price</td>
+        <td><input id="sellPrice" type="number" min="0" step="any"></td>
+      </tr>
+      <tr>
+        <td class="label">Remarks</td>
+        <td><input id="remarks" type="text"></td>
+      </tr>
+    </table>
 
     <div class="btn-row">
-        <button class="btn-save" onclick="saveChanges()">💾 Save</button>
-        <button class="btn-dup" onclick="duplicateItem()">📄 Duplicate</button>
-        <button class="btn-cancel" onclick="clearView()">Cancel</button>
+      <button class="btn-save" onclick="saveChanges()">💾 Save</button>
+      <button class="btn-dup" onclick="duplicateItem()">📄 Duplicate</button>
+      <button class="btn-cancel" onclick="clearView()">Cancel</button>
     </div>
-</div>
+  </div>
 
-<div class="not-found" id="notFound">Item not found</div>
+  <div class="not-found" id="notFound">Item not found</div>
+</div>
 
 <footer>© 2025 Mattmat Store</footer>
 
 <script>
-/* SAME STORAGE KEY */
 const STORAGE_KEY = 'store_inventory_v3_2_7';
 
 const input = document.getElementById('searchInput');
 const card = document.getElementById('itemCard');
 const notFound = document.getElementById('notFound');
 
-let products = [];
-let currentItem = null;
+let products=[], current=null;
 
-window.onload = () => input.focus();
+window.onload = ()=>input.focus();
 
-input.addEventListener('keydown', e=>{
-    if(e.key==='Enter'){
-        e.preventDefault();
-        findItem(input.value);
-        setTimeout(()=>input.select(),50);
-    }
+input.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    e.preventDefault();
+    findItem(input.value);
+    setTimeout(()=>input.select(),50);
+  }
 });
 
-function loadProducts(){
-    products = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-}
+function load(){ products = JSON.parse(localStorage.getItem(STORAGE_KEY))||[]; }
+function save(){ localStorage.setItem(STORAGE_KEY,JSON.stringify(products)); }
 
-function saveProducts(){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
-}
-
-function computeCost(packs, pcs, cpp){
-    packs=Number(packs)||0;
-    pcs=Number(pcs)||0;
-    cpp=Number(cpp)||0;
-    if(packs*pcs===0) return 0;
-    return cpp/(packs*pcs);
+function computeCost(packs,pcs,cpp){
+  packs=+packs||0; pcs=+pcs||0; cpp=+cpp||0;
+  if(packs*pcs===0) return 0;
+  return cpp/(packs*pcs);
 }
 
 function findItem(raw){
-    const key = String(raw).trim().toLowerCase();
-    if(!key) return;
+  const key=String(raw).trim().toLowerCase();
+  if(!key) return;
+  load();
+  current=products.find(p =>
+    String(p.barcode||'').toLowerCase()===key ||
+    String(p.name||'').toLowerCase().includes(key)
+  );
+  if(!current){
+    card.style.display='none';
+    notFound.style.display='block';
+    return;
+  }
+  notFound.style.display='none';
+  card.style.display='block';
 
-    loadProducts();
-    currentItem = products.find(p =>
-        String(p.barcode||'').toLowerCase()===key ||
-        String(p.name||'').toLowerCase().includes(key)
-    );
-
-    if(!currentItem){
-        card.style.display='none';
-        notFound.style.display='block';
-        return;
-    }
-
-    notFound.style.display='none';
-    card.style.display='block';
-
-    document.getElementById('itemName').textContent = currentItem.name || '';
-    document.getElementById('barcode').textContent = currentItem.barcode || '-';
-    document.getElementById('category').textContent = currentItem.category || '-';
-
-    packs.value = currentItem.packs || 0;
-    pcs.value = currentItem.pcsPerPack || 1;
-    costPack.value = currentItem.costPerPack || 0;
-    remarks.value = currentItem.remarks || '';
-    sellPrice.value = currentItem.sellPrice || '';
-
-    updateCost();
+  itemName.textContent=current.name||'';
+  barcode.textContent=current.barcode||'-';
+  category.textContent=current.category||'-';
+  packs.value=current.packs||0;
+  pcs.value=current.pcsPerPack||1;
+  costPack.value=current.costPerPack||0;
+  costPc.textContent=format(current.cost);
+  sellPrice.value=current.sellPrice||'';
+  sellBig.textContent=format(current.sellPrice);
+  remarks.value=current.remarks||'';
 }
 
-[packs,pcs,costPack].forEach(el=>{
-    el.addEventListener('input', updateCost);
-});
-sellPrice.addEventListener('input', ()=>{
-    sellDisplay.textContent = format(sellPrice.value);
-});
+[packs,pcs,costPack].forEach(el=>el.addEventListener('input',()=>{
+  const c=computeCost(packs.value,pcs.value,costPack.value);
+  costPc.textContent=format(c);
+}));
 
-function updateCost(){
-    const c = computeCost(packs.value, pcs.value, costPack.value);
-    costPc.textContent = format(c);
-}
+sellPrice.addEventListener('input',()=>{
+  sellBig.textContent=format(sellPrice.value);
+});
 
 function saveChanges(){
-    if(!currentItem) return;
-
-    currentItem.packs = Number(packs.value)||0;
-    currentItem.pcsPerPack = Number(pcs.value)||1;
-    currentItem.costPerPack = Number(costPack.value)||0;
-    currentItem.cost = computeCost(packs.value, pcs.value, costPack.value);
-    currentItem.sellPrice = sellPrice.value===''?'':Number(sellPrice.value);
-    currentItem.remarks = remarks.value || '';
-    currentItem.suggestedSellPrice = currentItem.cost * 1.2;
-    currentItem.markup = (Number(currentItem.sellPrice)||0) - currentItem.cost;
-
-    saveProducts();
-    alert('Saved');
+  if(!current) return;
+  current.packs=+packs.value||0;
+  current.pcsPerPack=+pcs.value||1;
+  current.costPerPack=+costPack.value||0;
+  current.cost=computeCost(packs.value,pcs.value,costPack.value);
+  current.sellPrice=sellPrice.value===''?'':+sellPrice.value;
+  current.remarks=remarks.value||'';
+  current.suggestedSellPrice=current.cost*1.2;
+  current.markup=(+current.sellPrice||0)-current.cost;
+  save();
+  alert('Saved');
 }
 
 function duplicateItem(){
-    if(!currentItem) return;
-
-    const copy = JSON.parse(JSON.stringify(currentItem));
-    copy.id = 'id_'+Math.random().toString(36).slice(2,9);
-    copy.barcode = '';
-    copy.name = currentItem.name + ' (copy)';
-    copy.checked = false;
-
-    products.push(copy);
-    saveProducts();
-    alert('Item duplicated');
+  if(!current) return;
+  const copy=JSON.parse(JSON.stringify(current));
+  copy.id='id_'+Math.random().toString(36).slice(2,9);
+  copy.barcode='';
+  copy.name=current.name+' (copy)';
+  copy.checked=false;
+  products.push(copy);
+  save();
+  alert('Duplicated');
 }
 
 function clearView(){
-    card.style.display='none';
-    notFound.style.display='none';
-    currentItem=null;
+  card.style.display='none';
+  notFound.style.display='none';
+  current=null;
 }
 
 function format(v){
-    if(v===null||v===undefined||v==='') return '';
-    return Number(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(v===null||v===undefined||v==='') return '';
+  return Number(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 </script>
 
