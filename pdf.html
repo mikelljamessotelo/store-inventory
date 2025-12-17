@@ -1,163 +1,158 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Mattmat Purchase Text (Copy)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="utf-8">
+<title>Mattmat Purchase Text (Copy)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <style>
-    body {
-      margin: 0;
-      padding: 12px;
-      background: #f5f5f5;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-    }
-
-    .wrap {
-      max-width: 640px;
-      margin: 0 auto;
-      background: #fff;
-      padding: 12px;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,.12);
-    }
-
-    h1 {
-      margin: 0 0 8px;
-      text-align: center;
-      font-size: 18px;
-    }
-
-    .buttons {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-      margin-bottom: 8px;
-    }
-
-    button {
-      padding: 8px 14px;
-      border-radius: 8px;
-      border: 1px solid #444;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    #copyBtn {
-      background: #4caf50;
-      color: #fff;
-      font-weight: 600;
-    }
-
-    textarea {
-      width: 100%;
-      min-height: 300px;
-      font-family: "Courier New", Courier, monospace;
-      font-size: 13px;
-      white-space: pre;
-      padding: 8px;
-      box-sizing: border-box;
-    }
-  </style>
+<style>
+body {
+  margin: 0;
+  padding: 12px;
+  background: #f5f5f5;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+.wrap {
+  max-width: 640px;
+  margin: auto;
+  background: #fff;
+  padding: 12px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.12);
+}
+h1 {
+  margin: 0 0 8px;
+  text-align: center;
+  font-size: 18px;
+}
+.buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  cursor: pointer;
+}
+#copyBtn {
+  background: #4caf50;
+  color: #fff;
+  font-weight: 600;
+}
+textarea {
+  width: 100%;
+  min-height: 320px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 13px;
+  white-space: pre;
+  padding: 8px;
+  box-sizing: border-box;
+}
+</style>
 </head>
 
 <body>
-  <div class="wrap">
-    <h1>Mattmat Purchase — Text Copy</h1>
+<div class="wrap">
+  <h1>Mattmat Purchase — Text Copy</h1>
 
-    <div class="buttons">
-      <button id="refreshBtn">Refresh</button>
-      <button id="copyBtn">Copy</button>
-    </div>
-
-    <textarea id="output" readonly></textarea>
+  <div class="buttons">
+    <button id="refreshBtn">Refresh</button>
+    <button id="copyBtn">Copy</button>
   </div>
 
-  <script>
-    const KEY = 'store_inventory_v3_2_7';
-    const MAX = 32;
+  <textarea id="output" readonly></textarea>
+</div>
 
-    const out = document.getElementById('output');
+<script>
+/* ========= CONFIG ========= */
+const KEY = 'store_inventory_v3_2_7';
+const MAX = 32;
 
-    function loadData() {
-      try {
-        const raw = localStorage.getItem(KEY);
-        return raw ? JSON.parse(raw) : [];
-      } catch {
-        return [];
-      }
+/* ========= LOAD (READ ONLY) ========= */
+function loadProducts() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+/* ========= FORMAT HELPERS ========= */
+function titleCase(str) {
+  return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/* WORD-SAFE WRAP — DOES NOT CUT WORDS */
+function wrapText(text) {
+  const words = text.split(' ');
+  const lines = [];
+  let current = '';
+
+  for (const word of words) {
+    const test = current ? current + ' ' + word : word;
+
+    if (test.length > MAX) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = test;
     }
+  }
 
-    function titleCase(str) {
-      return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-    }
+  if (current) lines.push(current);
+  return lines;
+}
 
-    function wrapItem(text) {
-      const words = text.split(' ');
-      const lines = [];
-      let current = '';
+/* ========= BUILD OUTPUT ========= */
+function build() {
+  const data = loadProducts().filter(p => p && p.checked);
+  if (!data.length) {
+    document.getElementById('output').value = '';
+    return;
+  }
 
-      words.forEach(word => {
-        const test = current ? current + ' ' + word : word;
+  const groups = new Map();
 
-        if (test.length > MAX) {
-          lines.push(current);
-          current = word;
-        } else {
-          current = test;
-        }
+  /* PRESERVE ORIGINAL ORDER */
+  data.forEach(p => {
+    const cat = (p.category || 'UNCATEGORIZED').trim();
+    const name = (p.name || '').trim();
+    if (!name) return;
+
+    if (!groups.has(cat)) groups.set(cat, []);
+    groups.get(cat).push(titleCase(name));
+  });
+
+  let out = [];
+
+  for (const [cat, items] of groups) {
+    out.push(`***${cat.toUpperCase()}***`);
+
+    items.forEach(item => {
+      const wrapped = wrapText(item);
+      wrapped.forEach((line, i) => {
+        out.push(i === 0 ? `- ${line}` : `  ${line}`);
       });
+    });
 
-      if (current) lines.push(current);
-      return lines;
-    }
+    out.push('');
+  }
 
-    function build() {
-      const data = loadData().filter(i => i && i.checked);
-      if (!data.length) {
-        out.value = '';
-        return;
-      }
+  document.getElementById('output').value = out.join('\n');
+}
 
-      const groups = new Map();
+/* ========= EVENTS ========= */
+document.getElementById('refreshBtn').onclick = build;
+document.getElementById('copyBtn').onclick =
+  () => navigator.clipboard.writeText(
+    document.getElementById('output').value
+  );
 
-      data.forEach(i => {
-        const cat = (i.category || 'UNCATEGORIZED').trim();
-        const name = (i.name || '').trim();
-        if (!name) return;
-        if (!groups.has(cat)) groups.set(cat, []);
-        groups.get(cat).push(titleCase(name));
-      });
-
-      let lines = [];
-
-      for (const [cat, items] of groups) {
-        lines.push(`***${cat.toUpperCase()}***`);
-
-        items.forEach(item => {
-          const wrapped = wrapItem(item);
-          wrapped.forEach((line, idx) => {
-            if (idx === 0) {
-              lines.push(`- ${line}`);
-            } else {
-              lines.push(`  ${line}`);
-            }
-          });
-        });
-
-        lines.push('');
-      }
-
-      out.value = lines.join('\n');
-    }
-
-    document.getElementById('refreshBtn').onclick = build;
-
-    document.getElementById('copyBtn').onclick = () => {
-      navigator.clipboard.writeText(out.value);
-    };
-
-    window.onload = build;
-  </script>
+window.onload = build;
+</script>
 </body>
 </html>
