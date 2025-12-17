@@ -10,13 +10,12 @@
         font-family: Arial, sans-serif;
         background: #f2f2f2;
         margin: 0;
-        padding: 0;
         text-align: center;
     }
 
     header {
         background: #4CAF50;
-        color: #fff;
+        color: white;
         padding: 22px;
         font-size: 34px;
         font-weight: bold;
@@ -34,11 +33,10 @@
         border-radius: 14px;
         border: 2px solid #bbb;
         text-align: center;
-        outline: none;
     }
 
     .card {
-        background: #fff;
+        background: white;
         margin: 24px auto;
         max-width: 680px;
         padding: 30px;
@@ -97,7 +95,6 @@
         id="searchInput"
         placeholder="Scan barcode or type item name"
         autofocus
-        inputmode="numeric"
     >
 </div>
 
@@ -119,7 +116,7 @@
 <footer>© 2025 Mattmat Store</footer>
 
 <script>
-/* SAME STORAGE AS YOUR INVENTORY SYSTEM */
+/* SAME STORAGE AS MAIN SYSTEM */
 const STORAGE_KEY = "products";
 
 const input = document.getElementById("searchInput");
@@ -129,28 +126,24 @@ const notFound = document.getElementById("notFound");
 input.addEventListener("keydown", e => {
     if (e.key === "Enter") {
         e.preventDefault();
-        searchItem(input.value.trim());
-        setTimeout(() => input.select(), 50); // auto-select for re-scan
+        searchItem(input.value);
+        setTimeout(() => input.select(), 50); // ready for next scan
     }
 });
 
-input.addEventListener("input", () => {
-    if (!input.value.trim()) {
-        card.style.display = "none";
-        notFound.style.display = "none";
-    }
-});
+window.onload = () => input.focus();
 
-function searchItem(keyword) {
+function searchItem(raw) {
+    const keyword = String(raw).trim().toLowerCase();
     if (!keyword) return;
 
     const items = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    const key = keyword.toLowerCase();
 
-    const item = items.find(i =>
-        (i.barcode && i.barcode.toLowerCase() === key) ||
-        (i.name && i.name.toLowerCase().includes(key))
-    );
+    const item = items.find(i => {
+        const barcode = String(i.barcode || "").trim().toLowerCase();
+        const name = String(i.name || "").trim().toLowerCase();
+        return barcode === keyword || name.includes(keyword);
+    });
 
     if (!item) {
         card.style.display = "none";
@@ -165,21 +158,18 @@ function searchItem(keyword) {
     document.getElementById("barcode").textContent = item.barcode || "-";
     document.getElementById("category").textContent = item.category || "-";
     document.getElementById("remarks").textContent = item.remarks || "-";
-    document.getElementById("costPack").textContent = format(item.cost);
-    document.getElementById("costPc").textContent = format(item.costPc);
-    document.getElementById("sellPrice").textContent = format(item.sellPrice);
+    document.getElementById("costPack").textContent = fmt(item.cost);
+    document.getElementById("costPc").textContent = fmt(item.costPc);
+    document.getElementById("sellPrice").textContent = fmt(item.sellPrice);
 }
 
-function format(val) {
+function fmt(val) {
     if (!val || Number(val) === 0) return "";
     return Number(val).toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });
 }
-
-/* Always keep focus ready for scanner */
-window.onload = () => input.focus();
 </script>
 
 </body>
