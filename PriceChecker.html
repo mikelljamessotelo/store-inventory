@@ -3,14 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Price Checker / Quick Edit</title>
+<title>Price Checker</title>
 
 <style>
 body{
   font-family: system-ui,-apple-system,Arial,sans-serif;
   background:#f2f2f2;
   margin:0;
-  padding:0;
 }
 header{
   background:#2e7d32;
@@ -27,7 +26,7 @@ header{
 }
 .search input{
   width:100%;
-  font-size:32px;
+  font-size:34px;
   padding:18px;
   border-radius:12px;
   border:2px solid #aaa;
@@ -43,62 +42,45 @@ header{
   display:none;
 }
 .item-name{
-  font-size:42px;
+  font-size:44px;
   font-weight:800;
+  margin-bottom:12px;
   color:#000;
-  margin-bottom:8px;
 }
+
+/* SELL PRICE POP */
 .sell-big{
-  font-size:52px;
+  font-size:64px;
   font-weight:900;
-  background:#ffeb3b;
+  background:#fff9c4;      /* light yellow */
   color:#000;
-  padding:14px;
-  border-radius:12px;
+  padding:20px;
+  border-radius:14px;
   text-align:center;
-  margin-bottom:22px;
+  margin-bottom:26px;
+  border:2px solid #fbc02d;
 }
-.form-table{
+
+.table{
   width:100%;
-  border-collapse:separate;
   border-spacing:0 14px;
 }
-.form-table td{
-  font-size:24px;
+.table td{
+  font-size:26px;
 }
-.form-table .label{
-  width:42%;
+.label{
+  width:45%;
   font-weight:700;
   color:#444;
 }
-.form-table input{
-  width:100%;
-  font-size:24px;
-  padding:12px 14px;
-  border-radius:10px;
-  border:1px solid #999;
+.value{
   font-weight:800;
+  color:#000;
 }
-.readonly{
-  font-weight:800;
+.negative{
+  color:#d32f2f;
 }
-.btn-row{
-  display:flex;
-  gap:14px;
-  margin-top:26px;
-}
-button{
-  flex:1;
-  padding:18px;
-  font-size:22px;
-  border:none;
-  border-radius:12px;
-  cursor:pointer;
-  font-weight:800;
-}
-.btn-save{background:#4caf50;color:#fff}
-.btn-dup{background:#1976d2;color:#fff}
-.btn-cancel{background:#e0e0e0}
+
 .not-found{
   margin-top:24px;
   text-align:center;
@@ -117,41 +99,32 @@ footer{
 
 <body>
 
-<header>🧾 PRICE CHECKER / QUICK EDIT</header>
+<header>🧾 PRICE CHECKER</header>
 
 <div class="container">
 
+  <!-- SEARCH (ONLY EDITABLE FIELD) -->
   <div class="search">
-    <input id="searchInput" type="text"
+    <input id="searchInput"
            placeholder="Scan barcode or type item name"
            autofocus>
   </div>
 
-  <div class="card" id="itemCard">
+  <div class="card" id="card">
     <div class="item-name" id="itemName"></div>
-    <div class="sell-big">₱ <span id="sellBig"></span></div>
 
-    <table class="form-table">
-      <tr><td class="label">Barcode</td><td class="readonly" id="barcode"></td></tr>
-      <tr><td class="label">Category</td><td class="readonly" id="category"></td></tr>
-      <tr><td class="label">Packs</td><td><input id="packs" type="number"></td></tr>
-      <tr><td class="label">Pcs / Pack</td><td><input id="pcs" type="number"></td></tr>
-      <tr><td class="label">Cost / Pack</td><td><input id="costPack" type="number"></td></tr>
-      <tr><td class="label">Cost / PC</td><td class="readonly" id="costPc"></td></tr>
-      <tr><td class="label">Sell Price</td><td><input id="sellPrice" type="number"></td></tr>
-
-      <!-- MARKUP -->
-      <tr><td class="label">Markup (₱)</td><td class="readonly" id="markupAmt"></td></tr>
-      <tr><td class="label">Markup (%)</td><td class="readonly" id="markupPct"></td></tr>
-
-      <tr><td class="label">Remarks</td><td><input id="remarks" type="text"></td></tr>
-    </table>
-
-    <div class="btn-row">
-      <button class="btn-save" onclick="saveChanges()">💾 Save</button>
-      <button class="btn-dup" onclick="duplicateItem()">📄 Duplicate</button>
-      <button class="btn-cancel" onclick="clearView()">Cancel</button>
+    <!-- SELL PRICE POP -->
+    <div class="sell-big">
+      ₱ <span id="sellPrice"></span>
     </div>
+
+    <table class="table">
+      <tr><td class="label">Barcode</td><td class="value" id="barcode"></td></tr>
+      <tr><td class="label">Category</td><td class="value" id="category"></td></tr>
+      <tr><td class="label">Cost (per PC)</td><td class="value" id="cost"></td></tr>
+      <tr><td class="label">Suggested Price</td><td class="value" id="suggested"></td></tr>
+      <tr><td class="label">Mark-Up</td><td class="value" id="markup"></td></tr>
+    </table>
   </div>
 
   <div class="not-found" id="notFound">Item not found</div>
@@ -160,111 +133,62 @@ footer{
 <footer>© 2025 Mattmat Store</footer>
 
 <script>
-const STORAGE_KEY = 'store_inventory_v3_2_7';
-let products=[], current=null;
+/* SAME STORAGE KEY */
+const KEY = 'store_inventory_v3_2_7';
 
-function load(){ products = JSON.parse(localStorage.getItem(STORAGE_KEY))||[]; }
-function save(){ localStorage.setItem(STORAGE_KEY,JSON.stringify(products)); }
+let products = [];
 
-function computeCost(packs,pcs,cpp){
-  if(!packs||!pcs) return 0;
-  return cpp/(packs*pcs);
+/* SAME HELPERS */
+function computeMarkup(sell, cost){
+  return (Number(sell)||0) - (Number(cost)||0);
 }
-
-function computeMarkup(cost,sell){
-  if(cost<=0||sell<=0) return {amt:0,pct:0};
-  const amt = sell - cost;
-  const pct = (amt / cost) * 100;
-  return {amt,pct};
-}
-
-function findItem(raw){
-  const key=raw.trim().toLowerCase();
-  load();
-  current=products.find(p =>
-    String(p.barcode||'').toLowerCase()===key ||
-    String(p.name||'').toLowerCase().includes(key)
-  );
-  if(!current){
-    itemCard.style.display='none';
-    notFound.style.display='block';
-    return;
-  }
-  notFound.style.display='none';
-  itemCard.style.display='block';
-
-  itemName.textContent=current.name||'';
-  barcode.textContent=current.barcode||'-';
-  category.textContent=current.category||'-';
-  packs.value=current.packs||0;
-  pcs.value=current.pcsPerPack||1;
-  costPack.value=current.costPerPack||0;
-
-  updateComputed();
-  sellPrice.value=current.sellPrice||'';
-  sellBig.textContent=format(current.sellPrice);
-  remarks.value=current.remarks||'';
-}
-
-function updateComputed(){
-  const cost = computeCost(+packs.value,+pcs.value,+costPack.value);
-  costPc.textContent=format(cost);
-
-  const sell = +sellPrice.value||0;
-  const m = computeMarkup(cost,sell);
-  markupAmt.textContent=format(m.amt);
-  markupPct.textContent = m.pct ? m.pct.toFixed(1)+'%' : '';
-}
-
-[packs,pcs,costPack,sellPrice].forEach(el=>el.addEventListener('input',()=>{
-  updateComputed();
-  sellBig.textContent=format(sellPrice.value);
-}));
-
-function saveChanges(){
-  if(!current) return;
-  const cost = computeCost(+packs.value,+pcs.value,+costPack.value);
-  const sell = +sellPrice.value||0;
-  const m = computeMarkup(cost,sell);
-
-  current.packs=+packs.value;
-  current.pcsPerPack=+pcs.value;
-  current.costPerPack=+costPack.value;
-  current.cost=cost;
-  current.sellPrice=sell;
-  current.markup=m.amt;
-  current.markupPercent=m.pct;
-  current.suggestedSellPrice=cost*1.2;
-  current.remarks=remarks.value||'';
-
-  save();
-  alert('Saved');
-}
-
-function duplicateItem(){
-  const copy=JSON.parse(JSON.stringify(current));
-  copy.id='id_'+Math.random().toString(36).slice(2,9);
-  copy.barcode='';
-  copy.name+=' (copy)';
-  products.push(copy);
-  save();
-  alert('Duplicated');
-}
-
-function clearView(){
-  itemCard.style.display='none';
-  notFound.style.display='none';
-  current=null;
-}
-
-function format(v){
-  if(!v) return '';
+function fmt(v){
+  if(v === '' || v === null || v === undefined) return '';
   return Number(v).toLocaleString(undefined,{minimumFractionDigits:2});
 }
 
-searchInput.addEventListener('keydown',e=>{
-  if(e.key==='Enter'){ e.preventDefault(); findItem(searchInput.value); }
+/* LOAD */
+function load(){
+  products = JSON.parse(localStorage.getItem(KEY)) || [];
+}
+
+/* SEARCH */
+searchInput.addEventListener('keydown', e=>{
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    findItem(searchInput.value);
+    setTimeout(()=>searchInput.select(),50);
+  }
 });
+
+function findItem(q){
+  load();
+  q = q.trim().toLowerCase();
+  const item = products.find(p =>
+    String(p.barcode||'').toLowerCase() === q ||
+    String(p.name||'').toLowerCase().includes(q)
+  );
+
+  if(!item){
+    card.style.display = 'none';
+    notFound.style.display = 'block';
+    return;
+  }
+
+  notFound.style.display = 'none';
+  card.style.display = 'block';
+
+  itemName.textContent = item.name || '';
+  barcode.textContent = item.barcode || '-';
+  category.textContent = item.category || '-';
+
+  sellPrice.textContent = fmt(item.sellPrice);
+  cost.textContent = fmt(item.cost);
+  suggested.textContent = fmt(item.suggestedSellPrice);
+
+  markup.textContent = fmt(item.markup);
+  markup.className = item.markup < 0 ? 'value negative' : 'value';
+}
 </script>
 
 </body>
