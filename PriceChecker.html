@@ -12,8 +12,6 @@ body{
   margin:0;
   padding:0;
 }
-
-/* HEADER */
 header{
   background:#2e7d32;
   color:#fff;
@@ -22,15 +20,11 @@ header{
   font-weight:800;
   text-align:center;
 }
-
-/* LAYOUT */
 .container{
   max-width:860px;
   margin:24px auto;
   padding:0 16px;
 }
-
-/* SEARCH */
 .search input{
   width:100%;
   font-size:32px;
@@ -40,8 +34,6 @@ header{
   text-align:center;
   font-weight:700;
 }
-
-/* CARD */
 .card{
   background:#fff;
   margin-top:22px;
@@ -50,15 +42,12 @@ header{
   box-shadow:0 6px 18px rgba(0,0,0,.18);
   display:none;
 }
-
-/* ITEM NAME + SELL PRICE */
 .item-name{
   font-size:42px;
   font-weight:800;
   color:#000;
   margin-bottom:8px;
 }
-
 .sell-big{
   font-size:52px;
   font-weight:900;
@@ -69,48 +58,35 @@ header{
   text-align:center;
   margin-bottom:22px;
 }
-
-/* TABLE FORM */
 .form-table{
   width:100%;
   border-collapse:separate;
   border-spacing:0 14px;
 }
-
 .form-table td{
   font-size:24px;
-  vertical-align:middle;
 }
-
 .form-table .label{
   width:42%;
   font-weight:700;
   color:#444;
 }
-
-/* INPUTS */
 .form-table input{
   width:100%;
   font-size:24px;
   padding:12px 14px;
   border-radius:10px;
   border:1px solid #999;
-  text-align:left;        /* LEFT aligned */
-  font-weight:800;        /* BOLD */
+  font-weight:800;
 }
-
 .readonly{
   font-weight:800;
-  font-size:24px;
 }
-
-/* BUTTONS */
 .btn-row{
   display:flex;
   gap:14px;
   margin-top:26px;
 }
-
 button{
   flex:1;
   padding:18px;
@@ -120,12 +96,9 @@ button{
   cursor:pointer;
   font-weight:800;
 }
-
 .btn-save{background:#4caf50;color:#fff}
 .btn-dup{background:#1976d2;color:#fff}
 .btn-cancel{background:#e0e0e0}
-
-/* NOT FOUND */
 .not-found{
   margin-top:24px;
   text-align:center;
@@ -133,8 +106,6 @@ button{
   color:#d32f2f;
   display:none;
 }
-
-/* FOOTER */
 footer{
   text-align:center;
   font-size:15px;
@@ -161,38 +132,19 @@ footer{
     <div class="sell-big">₱ <span id="sellBig"></span></div>
 
     <table class="form-table">
-      <tr>
-        <td class="label">Barcode</td>
-        <td class="readonly" id="barcode"></td>
-      </tr>
-      <tr>
-        <td class="label">Category</td>
-        <td class="readonly" id="category"></td>
-      </tr>
-      <tr>
-        <td class="label">Packs</td>
-        <td><input id="packs" type="number" min="0"></td>
-      </tr>
-      <tr>
-        <td class="label">Pcs / Pack</td>
-        <td><input id="pcs" type="number" min="1"></td>
-      </tr>
-      <tr>
-        <td class="label">Cost / Pack</td>
-        <td><input id="costPack" type="number" min="0" step="any"></td>
-      </tr>
-      <tr>
-        <td class="label">Cost / PC</td>
-        <td class="readonly"><span id="costPc"></span></td>
-      </tr>
-      <tr>
-        <td class="label">Sell Price</td>
-        <td><input id="sellPrice" type="number" min="0" step="any"></td>
-      </tr>
-      <tr>
-        <td class="label">Remarks</td>
-        <td><input id="remarks" type="text"></td>
-      </tr>
+      <tr><td class="label">Barcode</td><td class="readonly" id="barcode"></td></tr>
+      <tr><td class="label">Category</td><td class="readonly" id="category"></td></tr>
+      <tr><td class="label">Packs</td><td><input id="packs" type="number"></td></tr>
+      <tr><td class="label">Pcs / Pack</td><td><input id="pcs" type="number"></td></tr>
+      <tr><td class="label">Cost / Pack</td><td><input id="costPack" type="number"></td></tr>
+      <tr><td class="label">Cost / PC</td><td class="readonly" id="costPc"></td></tr>
+      <tr><td class="label">Sell Price</td><td><input id="sellPrice" type="number"></td></tr>
+
+      <!-- MARKUP -->
+      <tr><td class="label">Markup (₱)</td><td class="readonly" id="markupAmt"></td></tr>
+      <tr><td class="label">Markup (%)</td><td class="readonly" id="markupPct"></td></tr>
+
+      <tr><td class="label">Remarks</td><td><input id="remarks" type="text"></td></tr>
     </table>
 
     <div class="btn-row">
@@ -209,47 +161,37 @@ footer{
 
 <script>
 const STORAGE_KEY = 'store_inventory_v3_2_7';
-
-const input = document.getElementById('searchInput');
-const card = document.getElementById('itemCard');
-const notFound = document.getElementById('notFound');
-
 let products=[], current=null;
-
-window.onload = ()=>input.focus();
-
-input.addEventListener('keydown',e=>{
-  if(e.key==='Enter'){
-    e.preventDefault();
-    findItem(input.value);
-    setTimeout(()=>input.select(),50);
-  }
-});
 
 function load(){ products = JSON.parse(localStorage.getItem(STORAGE_KEY))||[]; }
 function save(){ localStorage.setItem(STORAGE_KEY,JSON.stringify(products)); }
 
 function computeCost(packs,pcs,cpp){
-  packs=+packs||0; pcs=+pcs||0; cpp=+cpp||0;
-  if(packs*pcs===0) return 0;
+  if(!packs||!pcs) return 0;
   return cpp/(packs*pcs);
 }
 
+function computeMarkup(cost,sell){
+  if(cost<=0||sell<=0) return {amt:0,pct:0};
+  const amt = sell - cost;
+  const pct = (amt / cost) * 100;
+  return {amt,pct};
+}
+
 function findItem(raw){
-  const key=String(raw).trim().toLowerCase();
-  if(!key) return;
+  const key=raw.trim().toLowerCase();
   load();
   current=products.find(p =>
     String(p.barcode||'').toLowerCase()===key ||
     String(p.name||'').toLowerCase().includes(key)
   );
   if(!current){
-    card.style.display='none';
+    itemCard.style.display='none';
     notFound.style.display='block';
     return;
   }
   notFound.style.display='none';
-  card.style.display='block';
+  itemCard.style.display='block';
 
   itemName.textContent=current.name||'';
   barcode.textContent=current.barcode||'-';
@@ -257,57 +199,72 @@ function findItem(raw){
   packs.value=current.packs||0;
   pcs.value=current.pcsPerPack||1;
   costPack.value=current.costPerPack||0;
-  costPc.textContent=format(current.cost);
+
+  updateComputed();
   sellPrice.value=current.sellPrice||'';
   sellBig.textContent=format(current.sellPrice);
   remarks.value=current.remarks||'';
 }
 
-[packs,pcs,costPack].forEach(el=>el.addEventListener('input',()=>{
-  const c=computeCost(packs.value,pcs.value,costPack.value);
-  costPc.textContent=format(c);
-}));
+function updateComputed(){
+  const cost = computeCost(+packs.value,+pcs.value,+costPack.value);
+  costPc.textContent=format(cost);
 
-sellPrice.addEventListener('input',()=>{
+  const sell = +sellPrice.value||0;
+  const m = computeMarkup(cost,sell);
+  markupAmt.textContent=format(m.amt);
+  markupPct.textContent = m.pct ? m.pct.toFixed(1)+'%' : '';
+}
+
+[packs,pcs,costPack,sellPrice].forEach(el=>el.addEventListener('input',()=>{
+  updateComputed();
   sellBig.textContent=format(sellPrice.value);
-});
+}));
 
 function saveChanges(){
   if(!current) return;
-  current.packs=+packs.value||0;
-  current.pcsPerPack=+pcs.value||1;
-  current.costPerPack=+costPack.value||0;
-  current.cost=computeCost(packs.value,pcs.value,costPack.value);
-  current.sellPrice=sellPrice.value===''?'':+sellPrice.value;
+  const cost = computeCost(+packs.value,+pcs.value,+costPack.value);
+  const sell = +sellPrice.value||0;
+  const m = computeMarkup(cost,sell);
+
+  current.packs=+packs.value;
+  current.pcsPerPack=+pcs.value;
+  current.costPerPack=+costPack.value;
+  current.cost=cost;
+  current.sellPrice=sell;
+  current.markup=m.amt;
+  current.markupPercent=m.pct;
+  current.suggestedSellPrice=cost*1.2;
   current.remarks=remarks.value||'';
-  current.suggestedSellPrice=current.cost*1.2;
-  current.markup=(+current.sellPrice||0)-current.cost;
+
   save();
   alert('Saved');
 }
 
 function duplicateItem(){
-  if(!current) return;
   const copy=JSON.parse(JSON.stringify(current));
   copy.id='id_'+Math.random().toString(36).slice(2,9);
   copy.barcode='';
-  copy.name=current.name+' (copy)';
-  copy.checked=false;
+  copy.name+=' (copy)';
   products.push(copy);
   save();
   alert('Duplicated');
 }
 
 function clearView(){
-  card.style.display='none';
+  itemCard.style.display='none';
   notFound.style.display='none';
   current=null;
 }
 
 function format(v){
-  if(v===null||v===undefined||v==='') return '';
-  return Number(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(!v) return '';
+  return Number(v).toLocaleString(undefined,{minimumFractionDigits:2});
 }
+
+searchInput.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); findItem(searchInput.value); }
+});
 </script>
 
 </body>
