@@ -45,14 +45,13 @@ header{
   font-size:44px;
   font-weight:800;
   margin-bottom:12px;
-  color:#000;
 }
 
 /* SELL PRICE POP */
 .sell-big{
   font-size:64px;
   font-weight:900;
-  background:#fff9c4;      /* light yellow */
+  background:#fff9c4;
   color:#000;
   padding:20px;
   border-radius:14px;
@@ -75,11 +74,12 @@ header{
 }
 .value{
   font-weight:800;
-  color:#000;
 }
-.negative{
-  color:#d32f2f;
-}
+
+/* COLOR RULES */
+.cost-pack{ color:#1976d2; } /* BLUE */
+.cost-pc{ color:#d32f2f; }   /* RED */
+.negative{ color:#d32f2f; }
 
 .not-found{
   margin-top:24px;
@@ -103,7 +103,7 @@ footer{
 
 <div class="container">
 
-  <!-- SEARCH (ONLY EDITABLE FIELD) -->
+  <!-- ONLY EDITABLE FIELD -->
   <div class="search">
     <input id="searchInput"
            placeholder="Scan barcode or type item name"
@@ -113,7 +113,6 @@ footer{
   <div class="card" id="card">
     <div class="item-name" id="itemName"></div>
 
-    <!-- SELL PRICE POP -->
     <div class="sell-big">
       ₱ <span id="sellPrice"></span>
     </div>
@@ -121,7 +120,10 @@ footer{
     <table class="table">
       <tr><td class="label">Barcode</td><td class="value" id="barcode"></td></tr>
       <tr><td class="label">Category</td><td class="value" id="category"></td></tr>
-      <tr><td class="label">Cost (per PC)</td><td class="value" id="cost"></td></tr>
+      <tr><td class="label">Packs</td><td class="value" id="packs"></td></tr>
+      <tr><td class="label">Pcs / Pack</td><td class="value" id="pcs"></td></tr>
+      <tr><td class="label">Cost per Pack</td><td class="value cost-pack" id="costPack"></td></tr>
+      <tr><td class="label">Cost per PC</td><td class="value cost-pc" id="costPc"></td></tr>
       <tr><td class="label">Suggested Price</td><td class="value" id="suggested"></td></tr>
       <tr><td class="label">Mark-Up</td><td class="value" id="markup"></td></tr>
     </table>
@@ -133,26 +135,18 @@ footer{
 <footer>© 2025 Mattmat Store</footer>
 
 <script>
-/* SAME STORAGE KEY */
 const KEY = 'store_inventory_v3_2_7';
-
 let products = [];
 
-/* SAME HELPERS */
-function computeMarkup(sell, cost){
-  return (Number(sell)||0) - (Number(cost)||0);
-}
 function fmt(v){
   if(v === '' || v === null || v === undefined) return '';
   return Number(v).toLocaleString(undefined,{minimumFractionDigits:2});
 }
 
-/* LOAD */
 function load(){
   products = JSON.parse(localStorage.getItem(KEY)) || [];
 }
 
-/* SEARCH */
 searchInput.addEventListener('keydown', e=>{
   if(e.key === 'Enter'){
     e.preventDefault();
@@ -170,22 +164,23 @@ function findItem(q){
   );
 
   if(!item){
-    card.style.display = 'none';
-    notFound.style.display = 'block';
+    card.style.display='none';
+    notFound.style.display='block';
     return;
   }
 
-  notFound.style.display = 'none';
-  card.style.display = 'block';
+  notFound.style.display='none';
+  card.style.display='block';
 
   itemName.textContent = item.name || '';
   barcode.textContent = item.barcode || '-';
   category.textContent = item.category || '-';
-
+  packs.textContent = item.packs ?? '';
+  pcs.textContent = item.pcsPerPack ?? '';
+  costPack.textContent = fmt(item.costPerPack);
+  costPc.textContent = fmt(item.cost);
   sellPrice.textContent = fmt(item.sellPrice);
-  cost.textContent = fmt(item.cost);
   suggested.textContent = fmt(item.suggestedSellPrice);
-
   markup.textContent = fmt(item.markup);
   markup.className = item.markup < 0 ? 'value negative' : 'value';
 }
