@@ -1,0 +1,129 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Bills Payment</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{font-family:Arial;background:#f4f4f4;padding:18px}
+.container{background:#fff;padding:16px;border-radius:8px;max-width:760px;margin:auto}
+label{font-weight:600;margin-top:10px;display:block}
+input,select,textarea{width:100%;padding:10px;margin-top:6px}
+button{padding:10px;border:none;border-radius:6px;margin-top:10px}
+.blue{background:#007bff;color:#fff}
+.red{background:#dc3545;color:#fff}
+textarea{font-family:Courier New;white-space:pre}
+</style>
+</head>
+<body>
+<div class="container">
+
+<label>Biller</label>
+<select id="biller"></select>
+
+<label>Name</label>
+<input id="name">
+
+<label>Account #</label>
+<input id="account">
+
+<label>Due Date</label>
+<input id="due">
+
+<label>Bill Amount</label>
+<input id="bill">
+
+<label>Penalty</label>
+<input id="penalty">
+
+<label>Service Fee</label>
+<input id="fee">
+
+<label>TOTAL AMOUNT</label>
+<input id="total" readonly>
+
+<button class="blue" onclick="generate()">Generate Receipt</button>
+<button class="red" onclick="clearAll()">Clear</button>
+
+<label>Receipt</label>
+<textarea id="receipt" readonly></textarea>
+
+<a href="bills_history.html">📜 View History</a>
+
+</div>
+
+<script>
+const W=32,R=13;
+const billersKey="billers_list";
+const historyKey="bills_history";
+
+const f=n=>"P "+Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,",");
+const L=s=>s.padEnd(W).slice(0,W);
+const C=s=>L(" ".repeat((W-s.length)>>1)+s);
+const line=(l,r)=>{
+ r=(r||"").slice(-R).padStart(R);
+ l=(l||"").slice(0,W-R-1);
+ return L(l+" ".repeat(W-l.length-r.length)+r);
+};
+
+function loadBillers(){
+ let b=JSON.parse(localStorage.getItem(billersKey)||"[]");
+ const sel=biller;
+ sel.innerHTML="";
+ b.forEach(x=>sel.add(new Option(x,x)));
+ sel.add(new Option("➕ Add New","__new"));
+}
+
+biller.onchange=()=>{
+ if(biller.value==="__new"){
+  let n=prompt("New Biller Name:");
+  if(!n) return loadBillers();
+  let b=JSON.parse(localStorage.getItem(billersKey)||"[]");
+  if(!b.includes(n)){ b.push(n); localStorage.setItem(billersKey,JSON.stringify(b)); }
+  loadBillers();
+  biller.value=n;
+ }
+};
+
+function generate(){
+ let b=+bill.value||0,p=+penalty.value||0,s=+fee.value||0;
+ let t=b+p+s;
+ total.value=t.toFixed(2);
+
+ const d=new Date();
+ const date=d.toLocaleDateString("en-US",{month:"short",day:"2-digit",year:"numeric"});
+ const time=d.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
+
+ const r=[];
+ r.push(C("BILLS PAYMENT"));
+ r.push("");
+ r.push(line("Date:",date));
+ r.push(line("Time:",time));
+ r.push("-".repeat(W));
+ r.push(line("Biller:",biller.value));
+ r.push(line("Name:",name.value));
+ r.push(line("Account #:",account.value));
+ r.push(line("Due Date:",due.value));
+ r.push("-".repeat(W));
+ r.push(line("Bill Amount:",f(b)));
+ r.push(line("Penalty:",f(p)));
+ r.push(line("Service Fee:",f(s)));
+ r.push(line("TOTAL AMOUNT:",f(t)));
+ r.push("-".repeat(W));
+
+ receipt.value=r.join("\n");
+
+ let h=JSON.parse(localStorage.getItem(historyKey)||"[]");
+ h.push({date,time,biller:biller.value,name:name.value,account:account.value,due:due.value,b,p,s,t});
+ localStorage.setItem(historyKey,JSON.stringify(h));
+}
+
+function clearAll(){
+ document.querySelectorAll("input").forEach(i=>i.value="");
+ receipt.value="";
+}
+
+loadBillers();
+</script>
+</body>
+</html>
