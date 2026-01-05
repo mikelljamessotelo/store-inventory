@@ -1,30 +1,31 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Bills Payment</title>
+<title>Bills Payment — 32-char Receipt</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{font-family:Arial;background:#f4f4f4;padding:18px}
-.container{background:#fff;padding:16px;border-radius:8px;max-width:760px;margin:auto}
-label{font-weight:600;margin-top:10px;display:block}
-input,textarea{width:100%;padding:10px;margin-top:6px}
+*{box-sizing:border-box}
+body{margin:0;padding:18px;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif}
+.container{max-width:760px;margin:auto;background:#fff;padding:16px;border-radius:8px}
+label{display:block;font-weight:600;margin-top:10px}
+input,textarea{width:100%;padding:10px;margin-top:6px;font-size:1rem}
 textarea{font-family:"Courier New",monospace;white-space:pre}
-.inline{display:flex;gap:12px;align-items:center;margin-top:6px}
-button{padding:10px;border:none;border-radius:6px;margin-top:10px}
+.inline{display:flex;gap:14px;margin-top:6px;font-size:.9rem}
+button{padding:10px;border:none;border-radius:6px;margin-top:10px;cursor:pointer}
 .blue{background:#007bff;color:#fff}
 .red{background:#dc3545;color:#fff}
-.small{font-size:.9rem}
 </style>
 </head>
 <body>
 <div class="container">
 
+<!-- ===== BILLER ===== -->
 <label>Biller</label>
-<div class="inline small">
-  <label><input type="checkbox" name="bopt" value="Tarelco 1"> Tarelco 1</label>
-  <label><input type="checkbox" name="bopt" value="Prime Water"> Prime Water</label>
-  <label><input type="checkbox" name="bopt" value="__manual"> Blank Text Box</label>
+<div class="inline">
+  <label><input type="checkbox" name="billerOpt" value="Tarelco 1"> Tarelco 1</label>
+  <label><input type="checkbox" name="billerOpt" value="Prime Water"> Prime Water</label>
+  <label><input type="checkbox" name="billerOpt" value="manual"> Blank Text Box</label>
 </div>
 <input id="billerManual" placeholder="Enter biller name" disabled>
 
@@ -36,6 +37,12 @@ button{padding:10px;border:none;border-radius:6px;margin-top:10px}
 
 <label>Due Date</label>
 <input id="due">
+
+<label>Date</label>
+<input id="date">
+
+<label>Time</label>
+<input id="time">
 
 <label>Bill Amount</label>
 <input id="bill">
@@ -49,90 +56,101 @@ button{padding:10px;border:none;border-radius:6px;margin-top:10px}
 <label>TOTAL AMOUNT</label>
 <input id="total" readonly>
 
+<label>Reference Number</label>
+<input id="ref">
+
+<label>Date Paid</label>
+<input id="paid">
+
 <button class="blue" onclick="generate()">Generate Receipt</button>
 <button class="red" onclick="clearAll()">Clear</button>
 
 <label>Receipt</label>
 <textarea id="receipt" readonly></textarea>
 
-<a href="bills_history.html">📜 View History</a>
-
 </div>
 
 <script>
-/* ===== receipt helpers (UNCHANGED) ===== */
-const W=32,R=13;
-const f=n=>"P "+Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,",");
-const L=s=>s.padEnd(W).slice(0,W);
-const C=s=>L(" ".repeat((W-s.length)>>1)+s);
-const line=(l,r)=>{
- r=(r||"").slice(-R).padStart(R);
- l=(l||"").slice(0,W-R-1);
- return L(l+" ".repeat(W-l.length-r.length)+r);
-};
-const dash=()=>"-".repeat(W);
+/* ===== 32-CHAR CONFIG ===== */
+const W = 32, R = 13;
 
-/* ===== biller checkbox logic ===== */
-const checks=[...document.querySelectorAll('input[name="bopt"]')];
+/* ===== HELPERS ===== */
+const money = n => "P " + Number(n||0).toFixed(2)
+  .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+const L = s => (s+" ".repeat(W)).slice(0,W);
+const C = s => L(" ".repeat((W-s.length)>>1)+s);
+const dash = () => "-".repeat(W);
+
+const line = (l,r)=>{
+  r = (r||"").slice(-R).padStart(R);
+  l = (l||"").slice(0,W-R-1);
+  return L(l+" ".repeat(W-l.length-r.length)+r);
+};
+
+/* ===== BILLER CHECKBOX LOGIC ===== */
+const checks=[...document.querySelectorAll('input[name="billerOpt"]')];
 const manual=document.getElementById("billerManual");
 
 checks.forEach(c=>{
- c.onchange=()=>{
-   checks.forEach(x=>{ if(x!==c) x.checked=false; });
-   manual.disabled = c.value!=="__manual";
-   if(manual.disabled) manual.value="";
- };
+  c.onchange=()=>{
+    checks.forEach(x=>{ if(x!==c) x.checked=false; });
+    manual.disabled = c.value!=="manual";
+    if(manual.disabled) manual.value="";
+  };
 });
 
 function getBiller(){
- const sel=checks.find(c=>c.checked);
- if(!sel) return "-";
- if(sel.value==="__manual") return manual.value.trim()||"-";
- return sel.value;
+  const c = checks.find(x=>x.checked);
+  if(!c) return "-";
+  return c.value==="manual" ? (manual.value||"-") : c.value;
 }
 
-/* ===== generate receipt + save history ===== */
+/* ===== TOTAL AUTO COMPUTE ===== */
+["bill","penalty","fee"].forEach(id=>{
+  document.getElementById(id).oninput = ()=>{
+    const b=+bill.value||0, p=+penalty.value||0, f=+fee.value||0;
+    total.value = (b+p+f).toFixed(2);
+  };
+});
+
+/* ===== GENERATE RECEIPT ===== */
 function generate(){
- let b=+bill.value||0,p=+penalty.value||0,s=+fee.value||0;
- let t=b+p+s;
- total.value=t.toFixed(2);
+  const b=+bill.value||0, p=+penalty.value||0, f=+fee.value||0;
+  const t=b+p+f;
+  total.value=t.toFixed(2);
 
- const d=new Date();
- const date=d.toLocaleDateString("en-US",{month:"short",day:"2-digit",year:"numeric"});
- const time=d.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
- const biller=getBiller();
+  const r=[];
+  r.push(C("BILLS PAYMENT"));
+  r.push("");
+  r.push(line("Date:", date.value||"-"));
+  r.push(line("Time:", time.value||"-"));
+  r.push(dash());
+  r.push(line("Biller:", getBiller()));
+  r.push(line("Name:", name.value||"-"));
+  r.push(line("Account #:", account.value||"-"));
+  r.push(line("Due Date:", due.value||"-"));
+  r.push(dash());
+  r.push(line("Bill Amount:", money(b)));
+  r.push(line("Penalty:", money(p)));
+  r.push(line("Service Fee:", money(f)));
+  r.push(line("TOTAL AMOUNT:", money(t)));
+  r.push(dash());
+  r.push(line("Reference No.:", ref.value||"-"));
+  r.push(line("Date Paid:", paid.value||"-"));
+  r.push(dash());
 
- const r=[];
- r.push(C("BILLS PAYMENT"));
- r.push("");
- r.push(line("Date:",date));
- r.push(line("Time:",time));
- r.push(dash());
- r.push(line("Biller:",biller));
- r.push(line("Name:",name.value||"-"));
- r.push(line("Account #:",account.value||"-"));
- r.push(line("Due Date:",due.value||"-"));
- r.push(dash());
- r.push(line("Bill Amount:",f(b)));
- r.push(line("Penalty:",f(p)));
- r.push(line("Service Fee:",f(s)));
- r.push(line("TOTAL AMOUNT:",f(t)));
- r.push(dash());
-
- receipt.value=r.join("\n");
-
- const h=JSON.parse(localStorage.getItem("bills_history")||"[]");
- h.push({date,time,biller,name:name.value,account:account.value,due:due.value,b,p,s,t});
- localStorage.setItem("bills_history",JSON.stringify(h));
+  receipt.value = r.join("\n");
 }
 
+/* ===== CLEAR ===== */
 function clearAll(){
- document.querySelectorAll("input").forEach(i=>{
-   if(i.type==="checkbox") i.checked=false;
-   else i.value="";
- });
- manual.disabled=true;
- receipt.value="";
+  document.querySelectorAll("input").forEach(i=>{
+    if(i.type==="checkbox") i.checked=false;
+    else i.value="";
+  });
+  manual.disabled=true;
+  receipt.value="";
 }
 </script>
 </body>
