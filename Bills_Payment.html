@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Bills Payment — 32-char Receipt</title>
+<title>Bills Payment — Locked Layout</title>
 
 <meta name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
@@ -29,16 +29,25 @@ body{
   border-radius:8px;
 }
 
-fieldset{
-  border:1px solid #ddd;
-  border-radius:8px;
-  padding:12px;
-  margin-top:14px;
+/* ===== BUTTON CHECKBOX ===== */
+.biller-group{
+  display:flex;
+  gap:10px;
+  margin-top:6px;
 }
 
-legend{
-  font-weight:700;
-  padding:0 6px;
+.biller-btn{
+  padding:10px 14px;
+  border:1px solid #ccc;
+  border-radius:6px;
+  cursor:pointer;
+  user-select:none;
+}
+
+.biller-btn.active{
+  background:#007bff;
+  color:#fff;
+  border-color:#007bff;
 }
 
 label{
@@ -60,13 +69,6 @@ textarea{
   white-space:pre;
 }
 
-.inline{
-  display:flex;
-  gap:14px;
-  margin-top:6px;
-  align-items:center;
-}
-
 button{
   padding:12px;
   margin-top:10px;
@@ -76,63 +78,61 @@ button{
 }
 
 .blue{background:#007bff;color:#fff}
-.red{background:#dc3545;color:#fff}
 .gray{background:#6c757d;color:#fff}
+.red{background:#dc3545;color:#fff}
 </style>
 </head>
 
 <body>
 <div class="container">
 
+<!-- ===== HEADER INPUTS ===== -->
+<label>Reference #</label>
+<input id="ref">
+
+<label>Date Paid</label>
+<input id="datePaid">
+
 <!-- ===== BILLER ===== -->
-<fieldset>
-<legend>Biller</legend>
-<div class="inline">
-  <label><input type="checkbox" name="billerOpt" value="Tarelco 1"> Tarelco 1</label>
-  <label><input type="checkbox" name="billerOpt" value="Prime Water"> Prime Water</label>
-  <label><input type="checkbox" name="billerOpt" value="manual"> Blank Text Box</label>
+<label>Biller</label>
+<div class="biller-group">
+  <div class="biller-btn" data-val="Tarelco 1">Tarelco 1</div>
+  <div class="biller-btn" data-val="Prime Water">Prime Water</div>
+  <div class="biller-btn" data-val="manual">Manual</div>
 </div>
 <input id="billerManual" placeholder="Enter biller name" disabled>
-</fieldset>
 
-<!-- ===== CUSTOMER DETAILS ===== -->
-<fieldset>
-<legend>Customer Details</legend>
-<label>Name</label>
-<input id="name">
+<!-- ===== ACCOUNT ===== -->
+<label>Acct Name</label>
+<input id="acctName">
 
-<label>Account #</label>
-<input id="account">
+<label>Acct #</label>
+<input id="acctNo">
 
 <label>Due Date</label>
 <input id="due">
-</fieldset>
 
-<!-- ===== PAYMENT DETAILS ===== -->
-<fieldset>
-<legend>Payment Details</legend>
+<!-- ===== BILL ===== -->
 <label>Bill Amount</label>
 <input id="bill" inputmode="decimal">
 
 <label>Penalty</label>
 <input id="penalty" inputmode="decimal">
 
+<label>TOTAL BILL</label>
+<input id="totalBill" readonly>
+
 <label>Service Fee</label>
 <input id="fee" inputmode="decimal">
 
-<label>TOTAL AMOUNT</label>
-<input id="total" readonly>
-</fieldset>
+<label>Total Amount</label>
+<input id="totalAmount" readonly>
 
-<!-- ===== REFERENCE ===== -->
-<fieldset>
-<legend>Reference</legend>
-<label>Reference Number</label>
-<input id="ref">
+<label>Cash</label>
+<input id="cash" inputmode="decimal">
 
-<label>Date Paid</label>
-<input id="paid">
-</fieldset>
+<label>CHANGE</label>
+<input id="change" readonly>
 
 <button class="blue" onclick="generate()">Generate Receipt</button>
 <button class="gray" onclick="copyReceipt()">Copy Receipt</button>
@@ -144,8 +144,8 @@ button{
 </div>
 
 <script>
-/* ===== 32-CHAR CONFIG ===== */
-const W=32, R=13;
+/* ===== 32 CHAR CONFIG ===== */
+const W=32,R=13;
 
 /* ===== HELPERS ===== */
 const money=n=>"P "+Number(n||0).toFixed(2)
@@ -161,87 +161,82 @@ const line=(l,r)=>{
   return L(l+" ".repeat(W-l.length-r.length)+r);
 };
 
-/* ===== BILLER CHECKBOX ===== */
-const checks=[...document.querySelectorAll('input[name="billerOpt"]')];
+/* ===== BILLER BUTTON LOGIC ===== */
+let billerValue="-";
+const buttons=[...document.querySelectorAll(".biller-btn")];
 const manual=document.getElementById("billerManual");
 
-checks.forEach(c=>{
-  c.onchange=()=>{
-    checks.forEach(x=>{ if(x!==c) x.checked=false; });
-    manual.disabled = c.value!=="manual";
+buttons.forEach(btn=>{
+  btn.onclick=()=>{
+    buttons.forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    billerValue=btn.dataset.val;
+    manual.disabled = billerValue!=="manual";
     if(manual.disabled) manual.value="";
   };
 });
 
 function getBiller(){
-  const c=checks.find(x=>x.checked);
-  if(!c) return "-";
-  return c.value==="manual" ? (manual.value||"-") : c.value;
+  if(billerValue==="manual") return manual.value||"-";
+  return billerValue;
 }
 
-/* ===== TOTAL AUTO ===== */
-["bill","penalty","fee"].forEach(id=>{
-  document.getElementById(id).oninput=()=>{
-    const b=+bill.value||0;
-    const p=+penalty.value||0;
-    const f=+fee.value||0;
-    total.value=(b+p+f).toFixed(2);
-  };
+/* ===== COMPUTATION ===== */
+["bill","penalty","fee","cash"].forEach(id=>{
+  document.getElementById(id).oninput=compute;
 });
 
-/* ===== GENERATE RECEIPT ===== */
-function generate(){
+function compute(){
   const b=+bill.value||0;
   const p=+penalty.value||0;
   const f=+fee.value||0;
-  const t=b+p+f;
+  const c=+cash.value||0;
 
-  total.value=t.toFixed(2);
+  const tb=b+p;
+  const ta=tb+f;
+  const ch=c-ta;
 
-  const now=new Date();
-  const date=now.toLocaleDateString("en-US",{month:"short",day:"2-digit",year:"numeric"});
-  const time=now.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
+  totalBill.value=tb.toFixed(2);
+  totalAmount.value=ta.toFixed(2);
+  change.value=ch.toFixed(2);
+}
 
+/* ===== GENERATE RECEIPT ===== */
+function generate(){
   const r=[];
   r.push(C("BILLS PAYMENT"));
   r.push("");
-  r.push(line("Date:",date));
-  r.push(line("Time:",time));
+  r.push(line("Reference #:",ref.value||"-"));
+  r.push(line("Date Paid:",datePaid.value||"-"));
   r.push(dash());
   r.push(line("Biller:",getBiller()));
-  r.push(line("Name:",name.value||"-"));
-  r.push(line("Account #:",account.value||"-"));
+  r.push(line("Acct Name:",acctName.value||"-"));
+  r.push(line("Acct #:",acctNo.value||"-"));
   r.push(line("Due Date:",due.value||"-"));
+  r.push(line("Bill Amount:",money(bill.value)));
+  r.push(line("Penalty:",money(penalty.value)));
+  r.push(line("TOTAL BILL:",money(totalBill.value)));
   r.push(dash());
-  r.push(line("Bill Amount:",money(b)));
-  r.push(line("Penalty:",money(p)));
-  r.push(line("Service Fee:",money(f)));
-  r.push(line("TOTAL AMOUNT:",money(t)));
-  r.push(dash());
-  r.push(line("Reference No.:",ref.value||"-"));
-  r.push(line("Date Paid:",paid.value||"-"));
-  r.push(dash());
+  r.push(line("Service Fee:",money(fee.value)));
+  r.push(line("Total Amount:",money(totalAmount.value)));
+  r.push(line("Cash:",money(cash.value)));
+  r.push(line("CHANGE:",money(change.value)));
 
   receipt.value=r.join("\n");
 }
 
 /* ===== COPY ===== */
 function copyReceipt(){
-  if(!receipt.value.trim()){
-    alert("No receipt to copy.");
-    return;
-  }
+  if(!receipt.value.trim()) return alert("No receipt to copy");
   navigator.clipboard.writeText(receipt.value)
-    .then(()=>alert("Receipt copied!"))
-    .catch(()=>alert("Copy failed. Long-press and copy."));
+    .then(()=>alert("Receipt copied"));
 }
 
 /* ===== CLEAR ===== */
 function clearAll(){
-  document.querySelectorAll("input").forEach(i=>{
-    if(i.type==="checkbox") i.checked=false;
-    else i.value="";
-  });
+  document.querySelectorAll("input").forEach(i=>i.value="");
+  buttons.forEach(b=>b.classList.remove("active"));
+  billerValue="-";
   manual.disabled=true;
   receipt.value="";
 }
