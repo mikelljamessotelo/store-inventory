@@ -119,11 +119,18 @@ function right(label, value){
 }
 
 function generate(){
-  const amount = Number(amountInput.value || 0);
-  const penalty = Number(penaltyInput.value || 0);
-  const totalBill = Number(totalbillInput.value || 0);
-  const fee = Number(feeInput.value || 0);
-  const cash = Number(cashInput.value || 0);
+  // 🔧 FIX: explicitly get inputs
+  const biller = document.getElementById("biller").value;
+  const name = document.getElementById("name").value;
+  const acct = document.getElementById("acct").value;
+  const due = document.getElementById("due").value;
+  const amount = Number(document.getElementById("amount").value || 0);
+  const penalty = Number(document.getElementById("penalty").value || 0);
+  const totalBill = Number(document.getElementById("totalbill").value || 0);
+  const fee = Number(document.getElementById("fee").value || 0);
+  const ref = document.getElementById("ref").value;
+  const paidon = document.getElementById("paidon").value;
+  const cash = Number(document.getElementById("cash").value || 0);
 
   const totalAmount = totalBill + fee;
   const change = cash - totalAmount;
@@ -131,17 +138,17 @@ function generate(){
   const receipt = [
     padLine("         BILLS PAYMENT        "),
     "",
-    padLine("BILLER: " + biller.value),
-    padLine("Name: " + name.value),
-    padLine("Acct #: " + acct.value),
-    padLine("Due Date: " + due.value),
+    padLine("BILLER: " + biller),
+    padLine("Name: " + name),
+    padLine("Acct #: " + acct),
+    padLine("Due Date: " + due),
     sep,
     right("AMOUNT DUE:", money(amount)),
     right("PENALTY:", money(penalty)),
     right("TOTAL BILL:", money(totalBill)),
     sep,
-    padLine("Reference Number: " + ref.value),
-    padLine("Paid on: " + paidon.value),
+    padLine("Reference Number: " + ref),
+    padLine("Paid on: " + paidon),
     sep,
     right("Service Fee:", money(fee)),
     right("TOTAL AMOUNT:", money(totalAmount)),
@@ -149,10 +156,11 @@ function generate(){
     right("CHANGE:", money(change))
   ].join("\n");
 
-  out.value = receipt;
+  document.getElementById("out").value = receipt;
 }
 
 function copyReceipt(){
+  const out = document.getElementById("out");
   if(!out.value.trim()){
     alert("Generate the receipt first.");
     return;
@@ -161,10 +169,6 @@ function copyReceipt(){
     .then(()=>alert("Receipt copied"))
     .catch(()=>alert("Copy failed"));
 }
-
-const amountInput = document.getElementById("amount");
-const penaltyInput = document.getElementById("penalty");
-const totalbillInput = document.getElementById("totalbill");
 </script>
 </body>
 </html>
