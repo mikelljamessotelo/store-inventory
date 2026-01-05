@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Bills Payment — Locked Layout</title>
+<title>Bills Payment Receipt</title>
 
-<meta name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <style>
 *{
@@ -13,233 +12,141 @@
   font-size:16px;
   -webkit-text-size-adjust:100%;
 }
-
 body{
   margin:0;
-  padding:18px;
-  background:#f4f4f4;
+  padding:16px;
   font-family:Arial,Helvetica,sans-serif;
+  background:#f4f4f4;
 }
-
 .container{
-  max-width:760px;
+  max-width:720px;
   margin:auto;
   background:#fff;
   padding:16px;
   border-radius:8px;
 }
-
-/* ===== BUTTON CHECKBOX ===== */
-.biller-group{
-  display:flex;
-  gap:10px;
-  margin-top:6px;
-}
-
-.biller-btn{
-  padding:10px 14px;
-  border:1px solid #ccc;
-  border-radius:6px;
-  cursor:pointer;
-  user-select:none;
-}
-
-.biller-btn.active{
-  background:#007bff;
-  color:#fff;
-  border-color:#007bff;
-}
-
 label{
   display:block;
+  margin-top:8px;
   font-weight:600;
-  margin-top:10px;
 }
-
-input,textarea{
+input, textarea{
   width:100%;
-  padding:10px;
-  margin-top:6px;
+  padding:8px;
+  margin-top:4px;
   border:1px solid #ccc;
-  border-radius:6px;
+  border-radius:4px;
 }
-
 textarea{
   font-family:"Courier New",monospace;
   white-space:pre;
 }
-
 button{
-  padding:12px;
   margin-top:10px;
+  padding:10px;
+  width:100%;
   border:none;
   border-radius:6px;
+  background:#007bff;
+  color:#fff;
   cursor:pointer;
 }
-
-.blue{background:#007bff;color:#fff}
-.gray{background:#6c757d;color:#fff}
-.red{background:#dc3545;color:#fff}
 </style>
 </head>
 
 <body>
 <div class="container">
 
-<!-- ===== HEADER INPUTS ===== -->
-<label>Reference #</label>
-<input id="ref">
-
-<label>Date Paid</label>
-<input id="datePaid">
-
-<!-- ===== BILLER ===== -->
 <label>Biller</label>
-<div class="biller-group">
-  <div class="biller-btn" data-val="Tarelco 1">Tarelco 1</div>
-  <div class="biller-btn" data-val="Prime Water">Prime Water</div>
-  <div class="biller-btn" data-val="manual">Manual</div>
-</div>
-<input id="billerManual" placeholder="Enter biller name" disabled>
+<input id="biller" value="Tarelco 1">
 
-<!-- ===== ACCOUNT ===== -->
-<label>Acct Name</label>
-<input id="acctName">
+<label>Name</label>
+<input id="name">
 
 <label>Acct #</label>
-<input id="acctNo">
+<input id="acct">
 
 <label>Due Date</label>
 <input id="due">
 
-<!-- ===== BILL ===== -->
-<label>Bill Amount</label>
-<input id="bill" inputmode="decimal">
+<label>Amount Due</label>
+<input id="amount">
 
 <label>Penalty</label>
-<input id="penalty" inputmode="decimal">
+<input id="penalty">
 
-<label>TOTAL BILL</label>
-<input id="totalBill" readonly>
+<label>Total Bill</label>
+<input id="totalbill">
 
 <label>Service Fee</label>
-<input id="fee" inputmode="decimal">
+<input id="fee">
 
-<label>Total Amount</label>
-<input id="totalAmount" readonly>
+<label>Reference Number</label>
+<input id="ref">
+
+<label>Paid on</label>
+<input id="paidon">
 
 <label>Cash</label>
-<input id="cash" inputmode="decimal">
+<input id="cash">
 
-<label>CHANGE</label>
-<input id="change" readonly>
-
-<button class="blue" onclick="generate()">Generate Receipt</button>
-<button class="gray" onclick="copyReceipt()">Copy Receipt</button>
-<button class="red" onclick="clearAll()">Clear</button>
+<button onclick="generate()">Generate Receipt</button>
 
 <label>Receipt</label>
-<textarea id="receipt" readonly></textarea>
+<textarea id="out" rows="22" readonly></textarea>
 
 </div>
 
 <script>
-/* ===== 32 CHAR CONFIG ===== */
-const W=32,R=13;
+const W = 32;
+const line = s => (s + " ".repeat(W)).slice(0, W);
+const sep = "-".repeat(W);
 
-/* ===== HELPERS ===== */
-const money=n=>"P "+Number(n||0).toFixed(2)
-  .replace(/\B(?=(\d{3})+(?!\d))/g,",");
-
-const L=s=>(s+" ".repeat(W)).slice(0,W);
-const C=s=>L(" ".repeat((W-s.length)>>1)+s);
-const dash=()=>"-".repeat(W);
-
-const line=(l,r)=>{
-  r=(r||"").slice(-R).padStart(R);
-  l=(l||"").slice(0,W-R-1);
-  return L(l+" ".repeat(W-l.length-r.length)+r);
-};
-
-/* ===== BILLER BUTTON LOGIC ===== */
-let billerValue="-";
-const buttons=[...document.querySelectorAll(".biller-btn")];
-const manual=document.getElementById("billerManual");
-
-buttons.forEach(btn=>{
-  btn.onclick=()=>{
-    buttons.forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    billerValue=btn.dataset.val;
-    manual.disabled = billerValue!=="manual";
-    if(manual.disabled) manual.value="";
-  };
-});
-
-function getBiller(){
-  if(billerValue==="manual") return manual.value||"-";
-  return billerValue;
+function money(v){
+  return "P " + Number(v||0).toFixed(2);
 }
 
-/* ===== COMPUTATION ===== */
-["bill","penalty","fee","cash"].forEach(id=>{
-  document.getElementById(id).oninput=compute;
-});
-
-function compute(){
-  const b=+bill.value||0;
-  const p=+penalty.value||0;
-  const f=+fee.value||0;
-  const c=+cash.value||0;
-
-  const tb=b+p;
-  const ta=tb+f;
-  const ch=c-ta;
-
-  totalBill.value=tb.toFixed(2);
-  totalAmount.value=ta.toFixed(2);
-  change.value=ch.toFixed(2);
+function r(label, value){
+  const s = label + " ".repeat(W - label.length - value.length) + value;
+  return s.slice(0, W);
 }
 
-/* ===== GENERATE RECEIPT ===== */
 function generate(){
-  const r=[];
-  r.push(C("BILLS PAYMENT"));
-  r.push("");
-  r.push(line("Reference #:",ref.value||"-"));
-  r.push(line("Date Paid:",datePaid.value||"-"));
-  r.push(dash());
-  r.push(line("Biller:",getBiller()));
-  r.push(line("Acct Name:",acctName.value||"-"));
-  r.push(line("Acct #:",acctNo.value||"-"));
-  r.push(line("Due Date:",due.value||"-"));
-  r.push(line("Bill Amount:",money(bill.value)));
-  r.push(line("Penalty:",money(penalty.value)));
-  r.push(line("TOTAL BILL:",money(totalBill.value)));
-  r.push(dash());
-  r.push(line("Service Fee:",money(fee.value)));
-  r.push(line("Total Amount:",money(totalAmount.value)));
-  r.push(line("Cash:",money(cash.value)));
-  r.push(line("CHANGE:",money(change.value)));
+  const amount = Number(amountInput.value || 0);
+  const penalty = Number(penaltyInput.value || 0);
+  const totalBill = Number(totalbillInput.value || 0);
+  const fee = Number(feeInput.value || 0);
+  const cash = Number(cashInput.value || 0);
+  const totalAmount = totalBill + fee;
+  const change = cash - totalAmount;
 
-  receipt.value=r.join("\n");
+  const receipt = [
+    line("         BILLS PAYMENT        "),
+    "",
+    line("BILLER: " + biller.value),
+    line("Name: " + name.value),
+    line("Acct #: " + acct.value),
+    line("Due Date: " + due.value),
+    sep,
+    r("AMOUNT DUE:", money(amount)),
+    r("PENALTY:", money(penalty)),
+    r("TOTAL BILL:", money(totalBill)),
+    sep,
+    line("Reference Number: " + ref.value),
+    line("Paid on: " + paidon.value),
+    sep,
+    r("Service Fee:", money(fee)),
+    r("TOTAL AMOUNT:", money(totalAmount)),
+    r("CASH:", money(cash)),
+    r("CHANGE:", money(change))
+  ].join("\n");
+
+  out.value = receipt;
 }
 
-/* ===== COPY ===== */
-function copyReceipt(){
-  if(!receipt.value.trim()) return alert("No receipt to copy");
-  navigator.clipboard.writeText(receipt.value)
-    .then(()=>alert("Receipt copied"));
-}
-
-/* ===== CLEAR ===== */
-function clearAll(){
-  document.querySelectorAll("input").forEach(i=>i.value="");
-  buttons.forEach(b=>b.classList.remove("active"));
-  billerValue="-";
-  manual.disabled=true;
-  receipt.value="";
-}
+const amountInput = document.getElementById("amount");
+const penaltyInput = document.getElementById("penalty");
+const totalbillInput = document.getElementById("totalbill");
 </script>
 </body>
 </html>
