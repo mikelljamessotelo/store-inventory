@@ -3,20 +3,85 @@
 <head>
 <meta charset="utf-8">
 <title>Bills Payment — 32-char Receipt</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- 🔒 iOS NO AUTO ZOOM -->
+<meta name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
 <style>
-*{box-sizing:border-box}
-body{margin:0;padding:18px;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif}
-.container{max-width:760px;margin:auto;background:#fff;padding:16px;border-radius:8px}
-label{display:block;font-weight:600;margin-top:10px}
-input,textarea{width:100%;padding:10px;margin-top:6px;font-size:1rem}
-textarea{font-family:"Courier New",monospace;white-space:pre}
-.inline{display:flex;gap:14px;margin-top:6px;font-size:.9rem}
-button{padding:10px;border:none;border-radius:6px;margin-top:10px;cursor:pointer}
+/* ===== GLOBAL FONT LOCK (16px everywhere) ===== */
+*{
+  box-sizing:border-box;
+  font-size:16px;
+  -webkit-text-size-adjust:100%;
+}
+
+/* ===== BASE ===== */
+body{
+  margin:0;
+  padding:18px;
+  background:#f4f4f4;
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+.container{
+  max-width:760px;
+  margin:auto;
+  background:#fff;
+  padding:16px;
+  border-radius:8px;
+}
+
+/* ===== FORM ===== */
+label{
+  display:block;
+  font-weight:600;
+  margin-top:10px;
+}
+
+input,
+textarea{
+  width:100%;
+  padding:10px;
+  margin-top:6px;
+  font-size:16px;             /* 🔒 critical for iOS */
+  border:1px solid #ccc;
+  border-radius:6px;
+  outline:none;
+}
+
+textarea{
+  font-family:"Courier New",monospace;
+  white-space:pre;
+}
+
+/* ===== INLINE CHECKBOX ===== */
+.inline{
+  display:flex;
+  gap:14px;
+  margin-top:6px;
+  align-items:center;
+}
+
+.inline label{
+  font-weight:400;
+}
+
+/* ===== BUTTONS ===== */
+button{
+  padding:12px;
+  margin-top:10px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:16px;
+}
+
 .blue{background:#007bff;color:#fff}
 .red{background:#dc3545;color:#fff}
 </style>
 </head>
+
 <body>
 <div class="container">
 
@@ -45,13 +110,13 @@ button{padding:10px;border:none;border-radius:6px;margin-top:10px;cursor:pointer
 <input id="time">
 
 <label>Bill Amount</label>
-<input id="bill">
+<input id="bill" inputmode="decimal">
 
 <label>Penalty</label>
-<input id="penalty">
+<input id="penalty" inputmode="decimal">
 
 <label>Service Fee</label>
-<input id="fee">
+<input id="fee" inputmode="decimal">
 
 <label>TOTAL AMOUNT</label>
 <input id="total" readonly>
@@ -72,19 +137,19 @@ button{padding:10px;border:none;border-radius:6px;margin-top:10px;cursor:pointer
 
 <script>
 /* ===== 32-CHAR CONFIG ===== */
-const W = 32, R = 13;
+const W=32, R=13;
 
 /* ===== HELPERS ===== */
-const money = n => "P " + Number(n||0).toFixed(2)
-  .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+const money=n=>"P "+Number(n||0).toFixed(2)
+  .replace(/\B(?=(\d{3})+(?!\d))/g,",");
 
-const L = s => (s+" ".repeat(W)).slice(0,W);
-const C = s => L(" ".repeat((W-s.length)>>1)+s);
-const dash = () => "-".repeat(W);
+const L=s=>(s+" ".repeat(W)).slice(0,W);
+const C=s=>L(" ".repeat((W-s.length)>>1)+s);
+const dash=()=>"-".repeat(W);
 
-const line = (l,r)=>{
-  r = (r||"").slice(-R).padStart(R);
-  l = (l||"").slice(0,W-R-1);
+const line=(l,r)=>{
+  r=(r||"").slice(-R).padStart(R);
+  l=(l||"").slice(0,W-R-1);
   return L(l+" ".repeat(W-l.length-r.length)+r);
 };
 
@@ -101,46 +166,51 @@ checks.forEach(c=>{
 });
 
 function getBiller(){
-  const c = checks.find(x=>x.checked);
+  const c=checks.find(x=>x.checked);
   if(!c) return "-";
   return c.value==="manual" ? (manual.value||"-") : c.value;
 }
 
 /* ===== TOTAL AUTO COMPUTE ===== */
 ["bill","penalty","fee"].forEach(id=>{
-  document.getElementById(id).oninput = ()=>{
-    const b=+bill.value||0, p=+penalty.value||0, f=+fee.value||0;
-    total.value = (b+p+f).toFixed(2);
+  document.getElementById(id).oninput=()=>{
+    const b=+bill.value||0;
+    const p=+penalty.value||0;
+    const f=+fee.value||0;
+    total.value=(b+p+f).toFixed(2);
   };
 });
 
 /* ===== GENERATE RECEIPT ===== */
 function generate(){
-  const b=+bill.value||0, p=+penalty.value||0, f=+fee.value||0;
+  const b=+bill.value||0;
+  const p=+penalty.value||0;
+  const f=+fee.value||0;
   const t=b+p+f;
+
   total.value=t.toFixed(2);
 
   const r=[];
   r.push(C("BILLS PAYMENT"));
   r.push("");
-  r.push(line("Date:", date.value||"-"));
-  r.push(line("Time:", time.value||"-"));
+  r.push(line("Date:",date.value||"-"));
+  r.push(line("Time:",time.value||"-"));
   r.push(dash());
-  r.push(line("Biller:", getBiller()));
-  r.push(line("Name:", name.value||"-"));
-  r.push(line("Account #:", account.value||"-"));
-  r.push(line("Due Date:", due.value||"-"));
+  r.push(line("Biller:",getBiller()));
+  r.push(line("Name:",name.value||"-"));
+  r.push(line("Account #:",account.value||"-"));
+  r.push(line("Due Date:",due.value||"-"));
   r.push(dash());
-  r.push(line("Bill Amount:", money(b)));
-  r.push(line("Penalty:", money(p)));
-  r.push(line("Service Fee:", money(f)));
-  r.push(line("TOTAL AMOUNT:", money(t)));
+  r.push(line("Bill Amount:",money(b)));
+  r.push(line("Penalty:",money(p)));
+  r.push(line("Service Fee:",money(f)));
+  r.push(line("TOTAL AMOUNT:",money(t)));
   r.push(dash());
-  r.push(line("Reference No.:", ref.value||"-"));
-  r.push(line("Date Paid:", paid.value||"-"));
+  r.push(line("Reference No.:",ref.value||"-"));
+  r.push(line("Date Paid:",paid.value||"-"));
   r.push(dash());
 
-  receipt.value = r.join("\n");
+  receipt.value=r.join("\n");
 }
 
 /* ===== CLEAR ===== */
