@@ -51,6 +51,9 @@ button{
   color:#fff;
   cursor:pointer;
 }
+.copy{
+  background:#28a745;
+}
 </style>
 </head>
 
@@ -91,6 +94,7 @@ button{
 <input id="cash">
 
 <button onclick="generate()">Generate Receipt</button>
+<button class="copy" onclick="copyReceipt()">Copy Receipt</button>
 
 <label>Receipt</label>
 <textarea id="out" rows="22" readonly></textarea>
@@ -99,16 +103,19 @@ button{
 
 <script>
 const W = 32;
-const line = s => (s + " ".repeat(W)).slice(0, W);
 const sep = "-".repeat(W);
 
-function money(v){
-  return "P " + Number(v||0).toFixed(2);
+function padLine(text){
+  return (text + " ".repeat(W)).slice(0, W);
 }
 
-function r(label, value){
-  const s = label + " ".repeat(W - label.length - value.length) + value;
-  return s.slice(0, W);
+function money(v){
+  return "P " + Number(v || 0).toFixed(2);
+}
+
+function right(label, value){
+  const space = W - label.length - value.length;
+  return (label + " ".repeat(space > 0 ? space : 1) + value).slice(0, W);
 }
 
 function generate(){
@@ -117,31 +124,42 @@ function generate(){
   const totalBill = Number(totalbillInput.value || 0);
   const fee = Number(feeInput.value || 0);
   const cash = Number(cashInput.value || 0);
+
   const totalAmount = totalBill + fee;
   const change = cash - totalAmount;
 
   const receipt = [
-    line("         BILLS PAYMENT        "),
+    padLine("         BILLS PAYMENT        "),
     "",
-    line("BILLER: " + biller.value),
-    line("Name: " + name.value),
-    line("Acct #: " + acct.value),
-    line("Due Date: " + due.value),
+    padLine("BILLER: " + biller.value),
+    padLine("Name: " + name.value),
+    padLine("Acct #: " + acct.value),
+    padLine("Due Date: " + due.value),
     sep,
-    r("AMOUNT DUE:", money(amount)),
-    r("PENALTY:", money(penalty)),
-    r("TOTAL BILL:", money(totalBill)),
+    right("AMOUNT DUE:", money(amount)),
+    right("PENALTY:", money(penalty)),
+    right("TOTAL BILL:", money(totalBill)),
     sep,
-    line("Reference Number: " + ref.value),
-    line("Paid on: " + paidon.value),
+    padLine("Reference Number: " + ref.value),
+    padLine("Paid on: " + paidon.value),
     sep,
-    r("Service Fee:", money(fee)),
-    r("TOTAL AMOUNT:", money(totalAmount)),
-    r("CASH:", money(cash)),
-    r("CHANGE:", money(change))
+    right("Service Fee:", money(fee)),
+    right("TOTAL AMOUNT:", money(totalAmount)),
+    right("CASH:", money(cash)),
+    right("CHANGE:", money(change))
   ].join("\n");
 
   out.value = receipt;
+}
+
+function copyReceipt(){
+  if(!out.value.trim()){
+    alert("Generate the receipt first.");
+    return;
+  }
+  navigator.clipboard.writeText(out.value)
+    .then(()=>alert("Receipt copied"))
+    .catch(()=>alert("Copy failed"));
 }
 
 const amountInput = document.getElementById("amount");
