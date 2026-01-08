@@ -2,106 +2,137 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Amount × QTY Calculator</title>
+<title>Amount × QTY Calculator — Receipt Header/Footer Control</title>
 
+<!-- NO DOUBLE-TAP ZOOM -->
 <meta name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 
 <style>
-/* ===== GLOBAL FIXES ===== */
-html{
-  font-size:16px;
-  -webkit-text-size-adjust:100%;
-}
+/* ================= GLOBAL SAFETY ================= */
+html{font-size:16px;-webkit-text-size-adjust:100%}
 body{
   margin:0;
+  padding:0;
   background:#000;
   color:#f5f5f7;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  height:100%;
   touch-action:manipulation;
   user-select:none;
 }
 *,*::before,*::after,
-input,button,textarea{
+input,button,textarea,select{
   box-sizing:border-box;
-  font-size:16px!important;
+  font-size:16px !important;
   touch-action:manipulation;
 }
-input,textarea{user-select:text;}
-button{cursor:pointer;font-weight:800}
+input,textarea{user-select:text}
+button{cursor:pointer;font-family:inherit}
 
-/* ===== LAYOUT ===== */
-:root{--keypad-height:260px;--max-width:480px}
-.page{min-height:100vh;display:flex;justify-content:center;padding-bottom:var(--keypad-height)}
-.app{width:100%;max-width:var(--max-width);padding:12px;display:flex;flex-direction:column;gap:12px}
-h1{text-align:center}
+/* ================= LAYOUT ================= */
+:root{
+  --keypad-height:260px;
+  --max-width:480px;
+}
+.page{
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  padding-bottom:var(--keypad-height);
+}
+.app{
+  width:100%;
+  max-width:var(--max-width);
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  height:calc(100vh - var(--keypad-height));
+}
+h1{text-align:center;margin:8px 0}
 
-/* ===== TOTALS ===== */
+/* ================= TOTALS ================= */
 .totals{
   display:flex;
   justify-content:space-between;
   background:#111;
-  padding:16px;
+  padding:18px 16px;
   border-radius:12px;
   border:1px solid #2a2a2a;
+  font-weight:700;
 }
-.label{color:#aaa}
-
-/* ===== BUTTONS (2× BIGGER) ===== */
-button{
-  padding:18px;
-  font-size:32px!important; /* 2× */
-  border-radius:12px;
-  border:none;
+.label{
+  display:block;
+  color:#a0a0a0;
+  font-weight:600;
+  margin-bottom:4px;
 }
-.btn-main{background:#0a84ff;color:#fff}
-.btn-reset{background:#222;color:#fff;width:72px}
 
-/* ===== TABLE ===== */
+/* ================= BUTTONS (2× BIGGER) ================= */
+button,
+.num-key,
+.cash-buttons button,
+.modal-buttons button,
+.receipt-actions button{
+  font-size:32px !important;
+  font-weight:800;
+}
+
+/* ================= TABLE ================= */
 .table{
   background:#111;
   border-radius:10px;
   padding:8px;
   border:1px solid #2a2a2a;
-  overflow:auto;
+  overflow-y:auto;
 }
 .table-header,.item-row{
   display:grid;
-  grid-template-columns:1.3fr 1.5fr 1fr;
+  grid-template-columns:1.3fr 1.7fr 1fr;
   gap:6px;
   align-items:center;
 }
-.table-header{color:#aaa;border-bottom:1px solid #2a2a2a}
+.table-header{
+  font-weight:600;
+  color:#b0b0b0;
+  border-bottom:1px solid #2a2a2a;
+  padding-bottom:4px;
+  position:sticky;
+  top:0;
+  background:#111;
+  z-index:1;
+}
 
-/* ===== INPUTS ===== */
+/* ================= INPUTS ================= */
 .amount-input{
   width:100%;
   padding:10px;
   background:#151515;
-  border:1px solid #333;
   border-radius:8px;
+  border:1px solid #333;
   text-align:right;
   color:#fff;
 }
-.row-total{text-align:right;font-weight:700}
+.row-total{text-align:right;font-weight:600}
 
-/* ===== QTY INLINE CONTROLS ===== */
+/* ================= PATCH: INLINE QTY ================= */
 .qty-wrap{
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:6px;
+  gap:8px;
   visibility:hidden;
 }
 .item-row.active .qty-wrap{visibility:visible}
 
 .qty-btn{
-  width:56px;
-  height:56px;
-  font-size:36px!important;
+  min-width:56px;
+  min-height:56px;
   background:#2c2c2e;
   color:#fff;
   border-radius:10px;
+  border:1px solid #333;
 }
 .qty-display{
   min-width:48px;
@@ -109,7 +140,7 @@ button{
   font-weight:800;
 }
 
-/* ===== KEYPAD ===== */
+/* ================= KEYPAD ================= */
 .keypad-fixed{
   position:fixed;
   bottom:0;
@@ -121,6 +152,7 @@ button{
   background:#050505;
   padding:12px;
   border-top:1px solid #181818;
+  z-index:9999;
 }
 .pad-grid{
   display:grid;
@@ -128,15 +160,17 @@ button{
   gap:8px;
 }
 .num-key{
+  padding:14px 0;
   background:#1c1c1e;
   color:#fff;
   border-radius:10px;
-  border:1px solid #333;
+  border:1px solid #2a2a2a;
 }
-.key-main{background:#0a84ff}
+.key-secondary{background:#2c2c2e}
 .key-danger{background:#b00020}
+.key-main{background:#0a84ff}
 
-/* ===== MODAL ===== */
+/* ================= MODALS & RECEIPT ================= */
 .modal-backdrop{
   position:fixed;
   inset:0;
@@ -144,6 +178,7 @@ button{
   display:none;
   align-items:center;
   justify-content:center;
+  z-index:99999;
 }
 .modal{
   background:#111;
@@ -152,19 +187,42 @@ button{
   width:92%;
   max-width:420px;
   border:1px solid #2a2a2a;
+  color:#fff;
 }
+textarea#receiptText{
+  width:100%;
+  min-height:220px;
+  margin-top:10px;
+  padding:8px;
+  border-radius:8px;
+  border:1px solid #333;
+  background:#000;
+  color:#fff;
+  font-family:"Courier New",monospace;
+  white-space:pre;
+}
+.receipt-actions{display:flex;gap:10px;margin-top:12px}
+.receipt-actions button{flex:1}
 </style>
 </head>
 
 <body>
+
+<!-- ================= APP ================= -->
 <div class="page">
 <div class="app">
 
 <h1>Amount × QTY Calculator</h1>
 
 <div class="totals">
-  <div><span class="label">Total</span><div id="totalAmount">0.00</div></div>
-  <div><span class="label">QTY</span><div id="totalQty">0</div></div>
+  <div>
+    <span class="label">Total Amount</span>
+    <span id="totalAmount">0.00</span>
+  </div>
+  <div style="text-align:right">
+    <span class="label">Total QTY</span>
+    <span id="totalQty">0</span>
+  </div>
 </div>
 
 <div style="display:flex;gap:8px">
@@ -172,72 +230,191 @@ button{
   <button class="btn-reset" id="resetBtn">↻</button>
 </div>
 
-<div class="table" id="rowsWrap">
+<div class="table" id="rowsContainerWrap">
   <div class="table-header">
     <div>Amount</div>
     <div style="text-align:center">QTY</div>
     <div style="text-align:right">Total</div>
   </div>
-  <div id="rows"></div>
+  <div id="rowsContainer"></div>
 </div>
 
 </div>
 </div>
 
-<!-- ===== KEYPAD ===== -->
-<div class="keypad-fixed">
-  <div class="pad-grid">
-    <button class="num-key">7</button><button class="num-key">8</button><button class="num-key">9</button><button class="num-key key-danger">⌫</button>
-    <button class="num-key">4</button><button class="num-key">5</button><button class="num-key">6</button><button class="num-key key-danger">AC</button>
-    <button class="num-key">1</button><button class="num-key">2</button><button class="num-key">3</button><button class="num-key key-main">↓</button>
-    <button class="num-key">0</button><button class="num-key">00</button><button class="num-key">.</button>
+<!-- ================= KEYPAD ================= -->
+<div class="keypad-fixed" id="keypad">
+  <div class="pad-grid" id="padAmount">
+    <button class="num-key" data-key="7">7</button>
+    <button class="num-key" data-key="8">8</button>
+    <button class="num-key" data-key="9">9</button>
+    <button class="num-key key-secondary" data-key="back">⌫</button>
+
+    <button class="num-key" data-key="4">4</button>
+    <button class="num-key" data-key="5">5</button>
+    <button class="num-key" data-key="6">6</button>
+    <button class="num-key key-danger" data-key="allclear">AC</button>
+
+    <button class="num-key" data-key="1">1</button>
+    <button class="num-key" data-key="2">2</button>
+    <button class="num-key" data-key="3">3</button>
+    <button class="num-key key-main" data-key="down" style="grid-row:span 2">↓</button>
+
+    <button class="num-key" data-key="0">0</button>
+    <button class="num-key" data-key="00">00</button>
+    <button class="num-key" data-key=".">.</button>
   </div>
 </div>
 
-<script>
-let rows=document.getElementById('rows');
-let active=0;
+<!-- ================= PAYMENT MODAL ================= -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h2 style="text-align:center">Payment Summary</h2>
 
-function addRow(){
-  const i=rows.children.length;
-  const r=document.createElement('div');
-  r.className='item-row';
-  r.dataset.i=i;
-  r.innerHTML=`
-    <input class="amount-input" readonly>
-    <div class="qty-wrap">
-      <button class="qty-btn" onclick="chg(${i},-1)">−</button>
-      <div class="qty-display" id="q${i}">1</div>
-      <button class="qty-btn" onclick="chg(${i},1)">+</button>
+    <div class="modal-row">
+      <div>Total:</div>
+      <div id="modalTotalAmount">0.00</div>
     </div>
-    <div class="row-total" id="t${i}">0.00</div>`;
-  r.onclick=()=>sel(i);
-  rows.appendChild(r);
+
+    <div class="modal-row">
+      <div>Cash:</div>
+      <input id="cashInput" type="number" readonly />
+    </div>
+
+    <div class="modal-row">
+      <div>Change:</div>
+      <div id="changeAmount">0.00</div>
+    </div>
+
+    <div class="cash-buttons">
+      <button data-cash="50">50</button>
+      <button data-cash="100">100</button>
+      <button data-cash="500">500</button>
+      <button data-action="clear">Clear</button>
+    </div>
+
+    <div class="modal-buttons">
+      <button id="modalDoneBtn">Done</button>
+      <button id="modalCancelBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= RECEIPT MODAL ================= -->
+<div class="modal-backdrop" id="receiptBackdrop">
+  <div class="modal">
+    <h2 style="text-align:center">Receipt</h2>
+    <textarea id="receiptText" readonly></textarea>
+    <div class="receipt-actions">
+      <button id="copyReceiptBtn">Copy</button>
+      <button id="printReceiptBtn">Print</button>
+      <button id="receiptCloseBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= SCRIPT ================= -->
+<script>
+/* ===== CORE STATE ===== */
+let activeRowIndex=0;
+let lastReceiptText='';
+const rowsContainer=document.getElementById('rowsContainer');
+const totalAmountEl=document.getElementById('totalAmount');
+const totalQtyEl=document.getElementById('totalQty');
+
+/* ===== ROWS ===== */
+function createRow(index){
+  const row=document.createElement('div');
+  row.className='item-row';
+  row.dataset.index=index;
+  row.innerHTML=`
+    <div><input class="amount-input" readonly></div>
+    <div class="qty-wrap">
+      <button class="qty-btn">−</button>
+      <div class="qty-display">1</div>
+      <button class="qty-btn">+</button>
+    </div>
+    <div class="row-total">0.00</div>
+  `;
+
+  const amount=row.querySelector('.amount-input');
+  amount.onclick=()=>setActiveRow(index);
+
+  const minus=row.querySelectorAll('.qty-btn')[0];
+  const plus=row.querySelectorAll('.qty-btn')[1];
+
+  minus.onclick=e=>{
+    e.stopPropagation();
+    setQty(row,Math.max(0,getQty(row)-1));
+  };
+  plus.onclick=e=>{
+    e.stopPropagation();
+    setQty(row,getQty(row)+1);
+  };
+
+  return row;
 }
-function sel(i){
-  active=i;
+function addRow(){rowsContainer.appendChild(createRow(rowsContainer.children.length));}
+
+function setActiveRow(i){
+  activeRowIndex=i;
   document.querySelectorAll('.item-row').forEach(r=>r.classList.remove('active'));
-  document.querySelector(`[data-i="${i}"]`).classList.add('active');
+  document.querySelector(`[data-index="${i}"]`).classList.add('active');
 }
-function chg(i,d){
-  let q=document.getElementById('q'+i);
-  let v=Math.max(0,(+q.textContent||0)+d);
-  q.textContent=v;
-  calc();
+
+function getQty(row){return parseInt(row.querySelector('.qty-display').textContent)||0}
+function setQty(row,q){
+  row.querySelector('.qty-display').textContent=q;
+  updateTotals();
 }
-function calc(){
+
+function updateTotals(){
   let ta=0,tq=0;
-  document.querySelectorAll('.item-row').forEach((r,i)=>{
-    let a=parseFloat(r.querySelector('.amount-input').value)||0;
-    let q=+document.getElementById('q'+i).textContent||0;
-    document.getElementById('t'+i).textContent=(a*q).toFixed(2);
+  document.querySelectorAll('.item-row').forEach(r=>{
+    const a=parseFloat(r.querySelector('.amount-input').value)||0;
+    const q=getQty(r);
+    r.querySelector('.row-total').textContent=(a*q).toFixed(2);
     ta+=a*q;tq+=q;
   });
-  totalAmount.textContent=ta.toFixed(2);
-  totalQty.textContent=tq;
+  totalAmountEl.textContent=ta.toFixed(2);
+  totalQtyEl.textContent=tq;
 }
 
-addRow();sel(0);
+/* ===== RECEIPT (SIMPLE, PRESENT) ===== */
+function buildReceipt(){
+  return `TOTAL: ₱${totalAmountEl.textContent}\nQTY: ${totalQtyEl.textContent}`;
+}
+
+document.getElementById('openSummaryBtn').onclick=()=>{
+  document.getElementById('modalTotalAmount').textContent=totalAmountEl.textContent;
+  document.getElementById('modalBackdrop').style.display='flex';
+};
+
+document.getElementById('modalDoneBtn').onclick=()=>{
+  lastReceiptText=buildReceipt();
+  document.getElementById('receiptText').value=lastReceiptText;
+  document.getElementById('modalBackdrop').style.display='none';
+  document.getElementById('receiptBackdrop').style.display='flex';
+};
+
+document.getElementById('receiptCloseBtn').onclick=()=>{
+  document.getElementById('receiptBackdrop').style.display='none';
+};
+
+document.getElementById('copyReceiptBtn').onclick=()=>{
+  navigator.clipboard.writeText(lastReceiptText);
+};
+
+document.getElementById('printReceiptBtn').onclick=()=>{
+  const w=window.open('');
+  w.document.write('<pre>'+lastReceiptText+'</pre>');
+  w.print();
+};
+
+/* ===== INIT ===== */
+addRow();
+setActiveRow(0);
 </script>
+
 </body>
 </html>
