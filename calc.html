@@ -1,791 +1,243 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Amount × QTY Calculator — Receipt Header/Footer Control</title>
+<meta charset="utf-8" />
+<title>Amount × QTY Calculator</title>
 
-  <!-- ✅ Prevent double-tap zoom -->
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 
-  <style>
-    /* ===== GLOBAL FONT & ZOOM FIX ===== */
-    html {
-      font-size: 16px;
-      -webkit-text-size-adjust: 100%;
-    }
+<style>
+/* ===== GLOBAL FIXES ===== */
+html{
+  font-size:16px;
+  -webkit-text-size-adjust:100%;
+}
+body{
+  margin:0;
+  background:#000;
+  color:#f5f5f7;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  touch-action:manipulation;
+  user-select:none;
+}
+*,*::before,*::after,
+input,button,textarea{
+  box-sizing:border-box;
+  font-size:16px!important;
+  touch-action:manipulation;
+}
+input,textarea{user-select:text;}
+button{cursor:pointer;font-weight:800}
 
-    body {
-      margin: 0;
-      padding: 0;
-      background: #000;
-      color: #f5f5f7;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      height: 100%;
-      font-size: 16px;
-      touch-action: manipulation; /* stops double-tap zoom */
-      -webkit-user-select: none;
-      user-select: none;
-    }
+/* ===== LAYOUT ===== */
+:root{--keypad-height:260px;--max-width:480px}
+.page{min-height:100vh;display:flex;justify-content:center;padding-bottom:var(--keypad-height)}
+.app{width:100%;max-width:var(--max-width);padding:12px;display:flex;flex-direction:column;gap:12px}
+h1{text-align:center}
 
-    *, *::before, *::after,
-    input, button, textarea, select {
-      box-sizing: border-box;
-      font-size: 16px !important;
-      touch-action: manipulation;
-    }
+/* ===== TOTALS ===== */
+.totals{
+  display:flex;
+  justify-content:space-between;
+  background:#111;
+  padding:16px;
+  border-radius:12px;
+  border:1px solid #2a2a2a;
+}
+.label{color:#aaa}
 
-    input, textarea {
-      -webkit-user-select: text;
-      user-select: text;
-    }
+/* ===== BUTTONS (2× BIGGER) ===== */
+button{
+  padding:18px;
+  font-size:32px!important; /* 2× */
+  border-radius:12px;
+  border:none;
+}
+.btn-main{background:#0a84ff;color:#fff}
+.btn-reset{background:#222;color:#fff;width:72px}
 
-    button {
-      cursor: pointer;
-      font-family: inherit;
-    }
+/* ===== TABLE ===== */
+.table{
+  background:#111;
+  border-radius:10px;
+  padding:8px;
+  border:1px solid #2a2a2a;
+  overflow:auto;
+}
+.table-header,.item-row{
+  display:grid;
+  grid-template-columns:1.3fr 1.5fr 1fr;
+  gap:6px;
+  align-items:center;
+}
+.table-header{color:#aaa;border-bottom:1px solid #2a2a2a}
 
-    :root {
-      --keypad-height: 260px;
-      --max-width: 480px;
-      --receipt-width-chars: 32;
-    }
+/* ===== INPUTS ===== */
+.amount-input{
+  width:100%;
+  padding:10px;
+  background:#151515;
+  border:1px solid #333;
+  border-radius:8px;
+  text-align:right;
+  color:#fff;
+}
+.row-total{text-align:right;font-weight:700}
 
-    .page {
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: stretch;
-      padding-bottom: var(--keypad-height);
-    }
+/* ===== QTY INLINE CONTROLS ===== */
+.qty-wrap{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  visibility:hidden;
+}
+.item-row.active .qty-wrap{visibility:visible}
 
-    .app {
-      width: 100%;
-      max-width: var(--max-width);
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      height: calc(100vh - var(--keypad-height));
-    }
+.qty-btn{
+  width:56px;
+  height:56px;
+  font-size:36px!important;
+  background:#2c2c2e;
+  color:#fff;
+  border-radius:10px;
+}
+.qty-display{
+  min-width:48px;
+  text-align:center;
+  font-weight:800;
+}
 
-    h1 {
-      text-align: center;
-      margin: 8px 0;
-      font-weight: 700;
-    }
+/* ===== KEYPAD ===== */
+.keypad-fixed{
+  position:fixed;
+  bottom:0;
+  left:50%;
+  transform:translateX(-50%);
+  width:100%;
+  max-width:var(--max-width);
+  height:var(--keypad-height);
+  background:#050505;
+  padding:12px;
+  border-top:1px solid #181818;
+}
+.pad-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+}
+.num-key{
+  background:#1c1c1e;
+  color:#fff;
+  border-radius:10px;
+  border:1px solid #333;
+}
+.key-main{background:#0a84ff}
+.key-danger{background:#b00020}
 
-    .totals {
-      display: flex;
-      justify-content: space-between;
-      background: #111;
-      padding: 16px;
-      border-radius: 12px;
-      font-weight: 700;
-      border: 1px solid #2a2a2a;
-    }
-
-    .label {
-      font-weight: 600;
-      color: #a0a0a0;
-      display: block;
-      margin-bottom: 4px;
-    }
-
-    .btn-row {
-      display: flex;
-      gap: 8px;
-    }
-
-    .btn-main {
-      flex: 1;
-      background: #0a84ff;
-      color: #fff;
-      padding: 12px;
-      border-radius: 10px;
-      font-weight: 700;
-      border: none;
-    }
-
-    .btn-reset {
-      width: 56px;
-      background: #111;
-      color: #fff;
-      border-radius: 10px;
-      border: 1px solid #2a2a2a;
-    }
-
-    .table-wrap {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-    }
-
-    .table {
-      background: #111;
-      border-radius: 10px;
-      padding: 8px;
-      border: 1px solid #2a2a2a;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .table-header,
-    .item-row {
-      display: grid;
-      grid-template-columns: 1.3fr 1fr 1fr;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .table-header {
-      font-weight: 600;
-      color: #b0b0b0;
-      border-bottom: 1px solid #2a2a2a;
-      padding-bottom: 4px;
-      position: sticky;
-      top: 0;
-      background: #111;
-      z-index: 1;
-    }
-
-    .amount-input {
-      width: 100%;
-      padding: 10px;
-      background: #151515;
-      border-radius: 8px;
-      border: 1px solid #333;
-      text-align: right;
-      color: #fff;
-    }
-
-    .qty-input {
-      width: 48px;
-      padding: 6px;
-      text-align: center;
-      background: #151515;
-      border: 1px solid #333;
-      border-radius: 6px;
-      color: #fff;
-    }
-
-    .row-total {
-      text-align: right;
-      font-weight: 600;
-    }
-
-    /* ===== FIXED KEYPAD ===== */
-    .keypad-fixed {
-      position: fixed;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100%;
-      max-width: var(--max-width);
-      height: var(--keypad-height);
-      background: #050505;
-      padding: 12px;
-      border-top: 1px solid #181818;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .pad-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      flex: 1;
-    }
-
-    .num-key {
-      padding: 14px 0;
-      background: #1c1c1e;
-      color: #fff;
-      border-radius: 10px;
-      border: 1px solid #2a2a2a;
-      font-weight: 700;
-    }
-
-    .key-secondary { background: #2c2c2e; }
-    .key-danger { background: #b00020; }
-    .key-main { background: #0a84ff; }
-
-    .num-key[data-key="down"] {
-      height: 120px !important;
-    }
-
-    /* ===== MODALS ===== */
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.85);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 99999;
-    }
-
-    .modal {
-      background: #111;
-      padding: 16px;
-      border-radius: 16px;
-      width: 92%;
-      max-width: 420px;
-      border: 1px solid #2a2a2a;
-      color: #fff;
-    }
-
-    .modal-title {
-      text-align: center;
-      font-weight: 800;
-      margin-bottom: 12px;
-    }
-
-    .modal-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .summary-box {
-      min-width: 150px;
-      padding: 10px;
-      border-radius: 10px;
-      text-align: right;
-      background: #1c1c1e;
-      border: 1px solid #333;
-      font-weight: 700;
-    }
-
-    textarea#receiptText {
-      width: 100%;
-      min-height: 220px;
-      margin-top: 10px;
-      padding: 8px;
-      border-radius: 8px;
-      border: 1px solid #333;
-      background: #000;
-      color: #fff;
-      font-family: "Courier New", monospace;
-      white-space: pre;
-      resize: vertical;
-    }
-
-    .receipt-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    .receipt-actions button {
-      flex: 1;
-      min-height: 56px;
-      padding: 14px;
-      border-radius: 12px;
-      font-weight: 800;
-      border: none;
-    }
-
-    .receipt-copy { background: #1e8e3e; color: #fff; }
-    .receipt-print { background: #ff7a00; color: #fff; }
-    .receipt-close { background: #333; color: #fff; }
-  </style>
+/* ===== MODAL ===== */
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.85);
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
+.modal{
+  background:#111;
+  padding:16px;
+  border-radius:16px;
+  width:92%;
+  max-width:420px;
+  border:1px solid #2a2a2a;
+}
+</style>
 </head>
+
 <body>
-  <div class="page">
-    <div class="app" id="app">
-      <h1>Amount × QTY Calculator</h1>
+<div class="page">
+<div class="app">
 
-      <div class="totals">
-        <div><span class="label">Total Amount</span><span id="totalAmount">0.00</span></div>
-        <div style="text-align:right;"><span class="label">Total QTY</span><span id="totalQty">0</span></div>
-      </div>
+<h1>Amount × QTY Calculator</h1>
 
-      <div class="btn-row">
-        <button class="btn-main" id="openSummaryBtn">DONE</button>
-        <button class="btn-reset" id="resetBtn">↻</button>
-      </div>
+<div class="totals">
+  <div><span class="label">Total</span><div id="totalAmount">0.00</div></div>
+  <div><span class="label">QTY</span><div id="totalQty">0</div></div>
+</div>
 
-      <div class="table-wrap">
-        <div class="table" id="rowsContainerWrap">
-          <div class="table-header">
-            <div>Amount</div>
-            <div style="text-align:center;">QTY</div>
-            <div style="text-align:right;">Total</div>
-          </div>
-          <div id="rowsContainer"></div>
-        </div>
-      </div>
-    </div>
+<div style="display:flex;gap:8px">
+  <button class="btn-main" id="openSummaryBtn">DONE</button>
+  <button class="btn-reset" id="resetBtn">↻</button>
+</div>
+
+<div class="table" id="rowsWrap">
+  <div class="table-header">
+    <div>Amount</div>
+    <div style="text-align:center">QTY</div>
+    <div style="text-align:right">Total</div>
   </div>
+  <div id="rows"></div>
+</div>
 
-  <!-- fixed keypad -->
-  <div class="keypad-fixed" id="keypad">
-    <div class="pad-grid pad-grid-amount" id="padAmount">
-      <button class="num-key" data-key="7">7</button>
-      <button class="num-key" data-key="8">8</button>
-      <button class="num-key" data-key="9">9</button>
-      <button class="num-key key-secondary" data-key="back">⌫</button>
+</div>
+</div>
 
-      <button class="num-key" data-key="4">4</button>
-      <button class="num-key" data-key="5">5</button>
-      <button class="num-key" data-key="6">6</button>
-      <button class="num-key key-danger" data-key="allclear">AC</button>
-
-      <button class="num-key" data-key="1">1</button>
-      <button class="num-key" data-key="2">2</button>
-      <button class="num-key" data-key="3">3</button>
-
-      <button class="num-key key-main" data-key="down" style="grid-row: span 2;">↓</button>
-
-      <button class="num-key" data-key="0">0</button>
-      <button class="num-key" data-key="00">00</button>
-      <button class="num-key" data-key=".">.</button>
-    </div>
-
-    <div class="pad-grid pad-grid-qty" id="padQty" style="display:none;">
-      <button class="num-key key-danger" data-key="qty-minus">-</button>
-      <button class="num-key key-main" data-key="qty-plus">+</button>
-      <button class="num-key" data-key="qty-down" style="grid-column: span 2;">↓</button>
-    </div>
+<!-- ===== KEYPAD ===== -->
+<div class="keypad-fixed">
+  <div class="pad-grid">
+    <button class="num-key">7</button><button class="num-key">8</button><button class="num-key">9</button><button class="num-key key-danger">⌫</button>
+    <button class="num-key">4</button><button class="num-key">5</button><button class="num-key">6</button><button class="num-key key-danger">AC</button>
+    <button class="num-key">1</button><button class="num-key">2</button><button class="num-key">3</button><button class="num-key key-main">↓</button>
+    <button class="num-key">0</button><button class="num-key">00</button><button class="num-key">.</button>
   </div>
-
-  <!-- PAYMENT MODAL -->
-  <div class="modal-backdrop" id="modalBackdrop">
-    <div class="modal">
-      <div class="modal-title">Payment Summary</div>
-
-      <div class="modal-row">
-        <div>Total Amount:</div>
-        <div id="modalTotalAmount" class="summary-box">0.00</div>
-      </div>
-
-      <div class="modal-row">
-        <div>Cash:</div>
-        <input type="number" id="cashInput" class="summary-box" readonly />
-      </div>
-
-      <div class="modal-row">
-        <div>Change:</div>
-        <div id="changeAmount" class="summary-box">0.00</div>
-      </div>
-
-      <div class="cash-buttons">
-        <button data-cash="5">5</button>
-        <button data-cash="10">10</button>
-        <button data-cash="20">20</button>
-        <button data-cash="50">50</button>
-
-        <button data-cash="100">100</button>
-        <button data-cash="500">500</button>
-        <button data-cash="1000">1000</button>
-        <button data-action="clear">Clear</button>
-
-        <button data-action="manual">Enter Manually</button>
-      </div>
-
-      <div class="modal-buttons">
-        <button class="btn-done" id="modalDoneBtn">Done</button>
-        <button class="btn-cancel" id="modalCancelBtn">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- RECEIPT MODAL -->
-  <div class="modal-backdrop" id="receiptBackdrop">
-    <div class="modal">
-      <div class="modal-title">Receipt Items</div>
-      <div id="receiptItemsContainer"></div>
-
-      <textarea id="receiptText" readonly></textarea>
-
-      <!-- Larger receipt action buttons -->
-      <div class="receipt-actions">
-        <button class="receipt-copy" id="copyReceiptBtn">Copy Receipt</button>
-        <button class="receipt-print" id="printReceiptBtn">Print PDF</button>
-        <button class="receipt-close" id="receiptCloseBtn">Close & Reset</button>
-      </div>
-    </div>
-  </div>
+</div>
 
 <script>
-/* ===== helpers & global state ===== */
-let activeRowIndex = 0;
-let lastPaymentData = null;
-let padMode = "amount";
-const rowsContainer = document.getElementById('rowsContainer');
-const totalAmountEl = document.getElementById('totalAmount');
-const totalQtyEl = document.getElementById('totalQty');
-const modal = document.getElementById('modalBackdrop');
-const cashInput = document.getElementById('cashInput');
-const changeAmount = document.getElementById('changeAmount');
-const receiptBackdrop = document.getElementById('receiptBackdrop');
-const receiptItemsContainer = document.getElementById('receiptItemsContainer');
-const receiptText = document.getElementById('receiptText');
-const padAmount = document.getElementById('padAmount');
-const padQty = document.getElementById('padQty');
+let rows=document.getElementById('rows');
+let active=0;
 
-/* 32-character receipt width */
-const RECEIPT_WIDTH = 32;
-
-/* Helpers */
-function formatMoney(n){
-  if (isNaN(n)) n = 0;
-  return "₱ " + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function addRow(){
+  const i=rows.children.length;
+  const r=document.createElement('div');
+  r.className='item-row';
+  r.dataset.i=i;
+  r.innerHTML=`
+    <input class="amount-input" readonly>
+    <div class="qty-wrap">
+      <button class="qty-btn" onclick="chg(${i},-1)">−</button>
+      <div class="qty-display" id="q${i}">1</div>
+      <button class="qty-btn" onclick="chg(${i},1)">+</button>
+    </div>
+    <div class="row-total" id="t${i}">0.00</div>`;
+  r.onclick=()=>sel(i);
+  rows.appendChild(r);
 }
-function formatMoneyShort(n){
-  if (isNaN(n)) n = 0;
-  return "₱" + Number(n).toFixed(2);
-}
-function padOrTrim(s, w){ if(s.length > w) return s.slice(0,w); return s + ' '.repeat(w - s.length); }
-function padRight(s, w){ if(s.length > w) return s.slice(0,w); return s + ' '.repeat(w - s.length); }
-function padLeft(s, w){ if(s.length > w) return s.slice(0,w); return ' '.repeat(w - s.length) + s; }
-function centerText(s, w){ if(s.length >= w) return s.slice(0,w); const extra = w - s.length; const left = Math.floor(extra/2); const right = extra - left; return ' '.repeat(left) + s + ' '.repeat(right); }
-function repeatChar(c, count){ return c.repeat(count); }
-function padLabelValue(label, value, w){ const lab = label + ':'; const val = value; const leftWidth = w - val.length; const left = (lab.length > leftWidth) ? lab.slice(0,leftWidth) : lab + ' '.repeat(leftWidth - lab.length); return left + val; }
-function sanitize(s){ return String(s).replace(/\r?\n|\r/g, ' ').replace(/\t/g, ' ').trim(); }
-function escapeHtml(str){ return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-/* CREATE / MANAGE ROWS */
-function createRow(index){
-  const row = document.createElement('div');
-  row.className = 'item-row';
-  row.dataset.index = index;
-  row.innerHTML = `
-    <div><input type="text" class="amount-input" readonly placeholder="0.00"></div>
-    <div class="qty-control"><input type="text" class="qty-input" readonly value="1"></div>
-    <div class="row-total">0.00</div>
-  `;
-  const amountInput = row.querySelector('.amount-input');
-  const qtyInput = row.querySelector('.qty-input');
-
-  amountInput.onclick = (e) => { e.stopPropagation(); setActiveRow(index); showPad('amount'); };
-  qtyInput.onclick = (e) => { e.stopPropagation(); setActiveRow(index); showPad('qty'); };
-
-  return row;
-}
-function addRow(){ rowsContainer.appendChild(createRow(rowsContainer.children.length)); }
-function getRow(index){ return document.querySelector(`.item-row[data-index="${index}"]`); }
-function setActiveRow(index){
-  activeRowIndex = index;
+function sel(i){
+  active=i;
   document.querySelectorAll('.item-row').forEach(r=>r.classList.remove('active'));
-  const active = getRow(index);
-  if(active){
-    active.classList.add('active');
-    const wrap = document.getElementById('rowsContainerWrap');
-    const rRect = active.getBoundingClientRect();
-    const wRect = wrap.getBoundingClientRect();
-    if(rRect.bottom > wRect.bottom || rRect.top < wRect.top){
-      active.scrollIntoView({behavior:'smooth', block:'nearest'});
-    }
-  }
+  document.querySelector(`[data-i="${i}"]`).classList.add('active');
 }
-function getQtyFromRow(row){
-  const q = row.querySelector('.qty-input').value;
-  return parseInt(q,10) || 0;
+function chg(i,d){
+  let q=document.getElementById('q'+i);
+  let v=Math.max(0,(+q.textContent||0)+d);
+  q.textContent=v;
+  calc();
 }
-function setQtyForRow(row, qty){ row.querySelector('.qty-input').value = qty; }
-function updateRowTotal(index){
-  const row = getRow(index); if(!row) return;
-  const amt = parseFloat(row.querySelector('.amount-input').value) || 0;
-  const qty = getQtyFromRow(row);
-  row.querySelector('.row-total').textContent = (amt * qty).toFixed(2);
-}
-function calculateTotals(){
-  let totalAmt = 0, totalQty = 0;
-  document.querySelectorAll('.item-row').forEach(row=>{
-    const amt = parseFloat(row.querySelector('.amount-input').value) || 0;
-    const qty = getQtyFromRow(row);
-    totalAmt += amt * qty;
-    totalQty += qty;
+function calc(){
+  let ta=0,tq=0;
+  document.querySelectorAll('.item-row').forEach((r,i)=>{
+    let a=parseFloat(r.querySelector('.amount-input').value)||0;
+    let q=+document.getElementById('q'+i).textContent||0;
+    document.getElementById('t'+i).textContent=(a*q).toFixed(2);
+    ta+=a*q;tq+=q;
   });
-  totalAmountEl.textContent = totalAmt.toFixed(2);
-  totalQtyEl.textContent = totalQty;
+  totalAmount.textContent=ta.toFixed(2);
+  totalQty.textContent=tq;
 }
 
-/* keypad visibility: keypad fixed; toggle panels */
-function showPad(mode){
-  padMode = mode;
-  if(mode === 'amount'){ padAmount.style.display = 'grid'; padQty.style.display = 'none'; }
-  else { padAmount.style.display = 'none'; padQty.style.display = 'grid'; }
-}
-
-/* click outside clears active highlight but keypad stays */
-document.addEventListener('click', function(e){
-  const isAmount = e.target.classList.contains('amount-input');
-  const isQty = e.target.classList.contains('qty-input');
-  const inPad = e.target.closest('.keypad-fixed') !== null;
-  if(!isAmount && !isQty && !inPad){
-    document.querySelectorAll('.item-row').forEach(r=>r.classList.remove('active'));
-  }
-});
-
-/* numeric pad handling */
-function handlePadInput(key){
-  const row = getRow(activeRowIndex);
-  if(!row) return;
-  if(key === 'qty-minus' || key === 'qty-plus' || key === 'qty-down'){
-    if(key === 'qty-down'){ if(activeRowIndex === rowsContainer.children.length - 1) addRow(); setActiveRow(activeRowIndex+1); return; }
-    let qty = getQtyFromRow(row);
-    qty = (key === 'qty-minus') ? Math.max(0, qty-1) : qty+1;
-    setQtyForRow(row, qty); updateRowTotal(activeRowIndex); calculateTotals(); return;
-  }
-  const input = row.querySelector('.amount-input');
-  let value = input.value || '';
-  if(key === 'back'){ value = value.slice(0,-1); }
-  else if(key === 'allclear'){ if(!confirm('This will clear all rows and totals. Continue?')) return; resetAll(); return; }
-  else if(key === 'down'){ if(activeRowIndex === rowsContainer.children.length - 1) addRow(); setActiveRow(activeRowIndex+1); return; }
-  else if(key === '.'){ if(!value.includes('.')) value += '.'; }
-  else if(key === '00'){ if(value !== '') value += '00'; }
-  else { value += key; }
-  input.value = value;
-  updateRowTotal(activeRowIndex); calculateTotals();
-}
-document.querySelectorAll('.num-key').forEach(btn=> btn.onclick = (e)=>{ e.stopPropagation(); handlePadInput(btn.dataset.key); });
-
-/* PAYMENT modal logic and buttons */
-function setChangeState(){
-  const total = parseFloat(totalAmountEl.textContent) || 0;
-  const cash = parseFloat(cashInput.value) || 0;
-  const diff = cash - total;
-  changeAmount.textContent = diff.toFixed(2);
-  changeAmount.classList.remove('change-ok','change-bad');
-  if(!total && !cash) return;
-  if(cash < total) changeAmount.classList.add('change-bad'); else changeAmount.classList.add('change-ok');
-}
-
-/* cash quick buttons behavior */
-function initCashButtons(){
-  const cashButtons = document.querySelectorAll('.cash-buttons button');
-  cashButtons.forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const cashVal = btn.dataset.cash;
-      const action = btn.dataset.action;
-      if(cashVal !== undefined){
-        const current = parseFloat(cashInput.value) || 0;
-        cashInput.value = (current + Number(cashVal)).toString();
-        setChangeState(); return;
-      }
-      if(action === 'clear'){ cashInput.value = ''; setChangeState(); return; }
-      if(action === 'manual'){
-        const entry = prompt('Enter cash amount (numbers only):');
-        if(entry === null) return;
-        const n = parseFloat(entry.replace(/,/g,''));
-        if(isNaN(n)){ alert('Invalid amount'); return; }
-        cashInput.value = n.toString(); setChangeState(); return;
-      }
-    });
-  });
-}
-
-/* open modal */
-document.getElementById('openSummaryBtn').onclick = ()=>{
-  document.getElementById('modalTotalAmount').textContent = totalAmountEl.textContent;
-  cashInput.readOnly = true;
-  modal.style.display = 'flex';
-};
-/* modal cancel */
-document.getElementById('modalCancelBtn').onclick = () => modal.style.display = 'none';
-cashInput.oninput = setChangeState;
-
-/* collect payment snapshot for receipt */
-function collectPaymentSnapshot(){
-  const items = [];
-  document.querySelectorAll('.item-row').forEach(row=>{
-    const amt = parseFloat(row.querySelector('.amount-input').value) || 0;
-    const qty = getQtyFromRow(row);
-    const subtotal = amt * qty;
-    if(qty > 0 && amt > 0) items.push({ amount: amt, qty, subtotal });
-  });
-  const total = parseFloat(totalAmountEl.textContent) || 0;
-  const cash = parseFloat(cashInput.value) || 0;
-  const change = parseFloat(changeAmount.textContent) || 0;
-  const now = new Date();
-  const dateStr = now.toLocaleDateString();
-  const timeStr = now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  return { items, total, cash, change, dateStr, timeStr };
-}
-
-/* Receipt builder — TWO-LINE PER ITEM layout (32 chars width)
-   Line 1: ITEM NAME (UPPERCASE) (full width)
-   Line 2: (4-space indent) QTY (left) AMOUNT (center) TOTAL (right)
-   Accepts options: { print: true } -> include header/footer; print:false -> exclude them
-*/
-function buildReceiptTextFromSnapshot(snap, opts = { print: false }){
-  if(!snap) return '';
-  const printMode = opts.print === true;
-
-  const lines = [];
-
-  // Header (only for print)
-  if (printMode) {
-    lines.push(centerText('MATTMAT STORE', RECEIPT_WIDTH));
-    lines.push(centerText('', RECEIPT_WIDTH));
-  }
-
-  lines.push(padRight('Date: ' + snap.dateStr, RECEIPT_WIDTH));
-  lines.push(padRight('Time: ' + snap.timeStr, RECEIPT_WIDTH));
-  lines.push(repeatChar('-', RECEIPT_WIDTH));
-
-  // per-item two-line layout
-  snap.items.forEach((it, idx) => {
-    const nameInput = document.querySelectorAll('.receipt-name-input')[idx];
-    const rawName = nameInput ? nameInput.value.trim() : `Item ${idx+1}`;
-    const name = sanitize(rawName).toUpperCase() || `ITEM ${idx+1}`;
-    // Line 1: item name uppercase, truncated/padded to 32 chars
-    lines.push(padOrTrim(name, RECEIPT_WIDTH));
-
-    // Line 2: indented 4 spaces, then columns within remaining width (28 chars)
-    const indent = ' '.repeat(4);
-    const remaining = RECEIPT_WIDTH - 4; // 28
-    // columns: qtyCol = 6, amountCol = 10, totalCol = remaining - (6+10) = 12
-    const qtyCol = 6;
-    const amountCol = 10;
-    const totalCol = remaining - qtyCol - amountCol; // 12
-
-    const qtyStr = `Q:${it.qty}`; // left
-    const amountStr = formatMoneyShort(it.amount); // middle (compact)
-    const totalStr = formatMoney(it.subtotal); // right (with space after peso)
-
-    const partQty = padRight(qtyStr, qtyCol);
-    const amountCentered = centerText(amountStr, amountCol);
-    const totalRight = padLeft(totalStr, totalCol);
-
-    const secondLineCore = (partQty + amountCentered + totalRight).slice(0, remaining);
-    const secondLine = indent + padOrTrim(secondLineCore, remaining);
-    lines.push(secondLine);
-  });
-
-  lines.push(repeatChar('-', RECEIPT_WIDTH));
-  lines.push(padLabelValue('TOTAL', formatMoney(snap.total), RECEIPT_WIDTH));
-  lines.push(padLabelValue('CASH', formatMoney(snap.cash), RECEIPT_WIDTH));
-  lines.push(padLabelValue('CHANGE', formatMoney(snap.change), RECEIPT_WIDTH));
-  lines.push(repeatChar('-', RECEIPT_WIDTH));
-
-  // Footer (only for print)
-  if (printMode) {
-    lines.push(centerText('Thank you', RECEIPT_WIDTH));
-  }
-
-  return lines.join('\n');
-}
-
-/* build receipt UI + preview (modal & copy use print:false) */
-function openReceiptForm(snapshot){
-  lastPaymentData = snapshot;
-  receiptItemsContainer.innerHTML = '';
-  receiptText.value = '';
-  snapshot.items.forEach((item, idx)=>{
-    const div = document.createElement('div');
-    div.className = 'receipt-item-row';
-    div.innerHTML = `
-      <label>Item ${idx+1}</label>
-      <input type="text" class="receipt-name-input" data-index="${idx}" placeholder="Item name" />
-      <div class="receipt-meta">QTY: ${item.qty} &nbsp;&nbsp; Amount: ${formatMoney(item.amount)} &nbsp;&nbsp; Subtotal: ${formatMoney(item.subtotal)}</div>
-    `;
-    receiptItemsContainer.appendChild(div);
-  });
-  // show preview WITHOUT header/footer
-  const txtPreview = buildReceiptTextFromSnapshot(snapshot, { print: false });
-  receiptText.value = txtPreview;
-  receiptBackdrop.style.display = 'flex';
-}
-
-/* Copy to clipboard (no header/footer) */
-document.getElementById('copyReceiptBtn').onclick = ()=>{
-  const txt = buildReceiptTextFromSnapshot(lastPaymentData, { print: false });
-  receiptText.value = txt;
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(()=>alert('Receipt copied to clipboard.'));
-  } else {
-    receiptText.select();
-    document.execCommand('copy');
-    alert('Receipt copied to clipboard.');
-  }
-};
-
-/* Print to PDF - includes header & footer (print:true) */
-document.getElementById('printReceiptBtn').onclick = ()=>{
-  if(!lastPaymentData){ alert('No receipt data'); return; }
-  const txt = buildReceiptTextFromSnapshot(lastPaymentData, { print: true });
-  // show print preview with header/footer in new window
-  const printHtml = `
-  <!doctype html>
-  <html>
-  <head>
-    <meta charset="utf-8">
-    <title>Receipt - MATTMAT STORE</title>
-    <style>
-      @page { size: 58mm auto; margin: 4mm; }
-      body { font-family: "Courier New", monospace; font-size:12px; margin:0; padding:0; width:58mm; }
-      pre { white-space: pre; font-family: "Courier New", monospace; font-size:12px; line-height:1.1; margin:0; }
-    </style>
-  </head>
-  <body>
-    <pre>${escapeHtml(txt)}</pre>
-    <script>
-      window.onload = function(){ setTimeout(function(){ window.print(); }, 300); };
-    <\/script>
-  </body>
-  </html>
-  `;
-  const w = window.open('', '_blank');
-  if(!w){ alert('Popup blocked. Allow popups to print.'); return; }
-  w.document.open();
-  w.document.write(printHtml);
-  w.document.close();
-};
-
-/* Done in payment modal */
-document.getElementById('modalDoneBtn').onclick = ()=>{
-  const snapshot = collectPaymentSnapshot();
-  const wantReceipt = confirm('Payment complete. Do you want to create a receipt?');
-  modal.style.display = 'none';
-  if(wantReceipt && snapshot.items.length > 0){
-    openReceiptForm(snapshot);
-  } else {
-    resetAll();
-  }
-};
-
-/* receipt close & reset */
-document.getElementById('receiptCloseBtn').onclick = ()=>{
-  receiptBackdrop.style.display = 'none';
-  resetAll();
-};
-
-/* Close modal helper */
-document.getElementById('modalCancelBtn').onclick = ()=> modal.style.display = 'none';
-
-/* Reset & init */
-function resetAll(){
-  rowsContainer.innerHTML = '';
-  addRow();
-  setActiveRow(0);
-  calculateTotals();
-  cashInput.value = '';
-  changeAmount.textContent = '0.00';
-  changeAmount.classList.remove('change-ok','change-bad');
-  lastPaymentData = null;
-  showPad('amount');
-}
-
-/* Top reset button */
-document.getElementById('resetBtn').onclick = ()=>{
-  if(!confirm('This will clear all rows and totals. Continue?')) return;
-  resetAll();
-};
-
-/* init keypad listeners, init cash buttons */
-function init(){
-  initCashButtons();
-  resetAll();
-}
-init();
+addRow();sel(0);
 </script>
 </body>
 </html>
