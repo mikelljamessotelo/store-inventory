@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory Editor</title>
+
+<style>
+:root{
+  --bg:#f3f4f6;
+  --card:#ffffff;
+  --border:#cbd5e1;
+  --text:#111827;
+  --green:#4caf50;
+  --yellow:#fff7cc;
+  --red:#ef4444;
+  --input-bg:#f8fafc;
+  --input-ro:#eef2f7;
+}
+
+*{
+  box-sizing:border-box;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,system-ui,Arial,sans-serif;
+  font-size:16px;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+}
+
+/* LAYOUT */
+.app{
+  display:grid;
+  grid-template-columns:340px 1fr; /* WIDER LIST */
+  height:100vh;
+}
+
+/* SIDEBAR */
+.sidebar{
+  background:#fff;
+  border-right:1px solid var(--border);
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.sidebar.hidden{ display:none; }
+
+.sidebar select,
+.sidebar button{
+  margin-bottom:10px;
+  padding:12px;
+  border-radius:10px;
+  border:1.5px solid var(--border);
+  background:var(--input-bg);
+}
+
+.item-list{
+  flex:1;
+  overflow-y:auto; /* SCROLL LIST ONLY */
+}
+
+.item{
+  padding:12px;
+  border-radius:10px;
+  cursor:pointer;
+}
+.item:hover{ background:#e5edf8; }
+
+/* MAIN */
+.main{
+  padding:16px;
+  overflow:hidden; /* FORM DOES NOT SCROLL WITH LIST */
+}
+
+.top-bar{
+  display:flex;
+  gap:10px;
+  margin-bottom:14px;
+}
+
+.toggle-btn{
+  padding:14px 16px;
+  border-radius:12px;
+  border:1.5px solid var(--border);
+  background:#fff;
+}
+
+/* SEARCH */
+.search input{
+  width:100%;
+  padding:18px;
+  font-size:20px;
+  text-align:center;
+  border-radius:14px;
+  border:1.5px solid var(--border);
+  background:var(--input-bg);
+}
+
+/* CARD */
+.card{
+  margin-top:18px;
+  background:var(--card);
+  border-radius:18px;
+  padding:24px;
+  box-shadow:0 20px 40px rgba(0,0,0,.12);
+  display:none;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+.full{ grid-column:1/-1; }
+
+label{
+  display:block;
+  margin-bottom:6px;
+  color:#000;
+}
+
+input, select{
+  width:100%;
+  padding:14px;
+  font-size:18px;
+  border-radius:12px;
+  border:1.5px solid var(--border);
+  background:var(--input-bg);
+}
+
+input[readonly], select:disabled{
+  background:var(--input-ro);
+}
+
+/* SELL */
+.sell{
+  background:var(--yellow);
+  font-weight:700;
+}
+
+/* ACTIONS */
+.actions{
+  display:flex;
+  gap:12px;
+  margin-top:22px;
+}
+
+.actions button{
+  flex:1;
+  padding:16px;
+  border-radius:14px;
+  border:none;
+  font-size:16px;
+}
+
+.edit{ background:#fff; border:1.5px solid var(--border); }
+.save{ background:var(--green); color:#fff; display:none; }
+.delete{ background:#fff; border:1.5px solid var(--red); color:var(--red); }
+
+@media(max-width:900px){
+  .app{ grid-template-columns:1fr; }
+  .sidebar{
+    position:absolute;
+    z-index:10;
+    height:100%;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <select id="filterCategory"></select>
+    <button onclick="addItem()">➕ Add Item</button>
+    <div class="item-list" id="itemList"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="top-bar">
+      <button class="toggle-btn" onclick="toggleSidebar()">☰ Items</button>
+      <div class="search">
+        <input id="searchInput" placeholder="Scan barcode or type item name">
+      </div>
+    </div>
+
+    <div class="card" id="card">
+      <div class="grid">
+
+        <div>
+          <label>Category</label>
+          <select id="category" disabled></select>
+        </div>
+
+        <div>
+          <label>Barcode(s)</label>
+          <input id="barcode" readonly>
+        </div>
+
+        <div class="full">
+          <label>Item Name</label>
+          <input id="itemName" readonly>
+        </div>
+
+        <div>
+          <label>Packs</label>
+          <input id="packs" readonly>
+        </div>
+
+        <div>
+          <label>Pcs / Pack</label>
+          <input id="pcs" readonly>
+        </div>
+
+        <div>
+          <label>Cost / Pack</label>
+          <input id="costPack" readonly>
+        </div>
+
+        <div>
+          <label>Cost (auto)</label>
+          <input id="costPc" readonly>
+        </div>
+
+        <div>
+          <label>Sell Price</label>
+          <input id="sellPrice" class="sell" readonly>
+        </div>
+
+        <div>
+          <label>Suggested</label>
+          <input id="suggested" readonly>
+        </div>
+
+        <div>
+          <label>Markup</label>
+          <input id="markup" readonly>
+        </div>
+
+      </div>
+
+      <div class="actions">
+        <button class="edit" id="editBtn" onclick="enterEdit()">Edit</button>
+        <button class="save" id="saveBtn" onclick="saveItem()">Save</button>
+        <button class="delete">Delete</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const KEY = 'store_inventory_v3_2_7';
+let products=[], index=-1;
+let editMode=false;
+
+/* ---------- GLOBAL ---------- */
+
+function toggleSidebar(){
+  sidebar.classList.toggle('hidden');
+}
+
+/* ESC cancels edit + focus search */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    exitEdit();
+    searchInput.focus();
+    searchInput.select();
+  }
+});
+
+/* ---------- LOAD ---------- */
+
+function load(){
+  products = JSON.parse(localStorage.getItem(KEY)) || [];
+  products.sort((a,b)=>(a.name||a.itemName||'').localeCompare(b.name||b.itemName||''));
+  buildCategories();
+  buildList();
+}
+
+function buildCategories(){
+  const cats=[...new Set(products.map(p=>p.category).filter(Boolean))];
+  filterCategory.innerHTML='<option value="">All Categories</option>';
+  category.innerHTML='';
+  cats.forEach(c=>{
+    filterCategory.innerHTML+=`<option>${c}</option>`;
+    category.innerHTML+=`<option>${c}</option>`;
+  });
+}
+
+function buildList(){
+  itemList.innerHTML='';
+  const fc=filterCategory.value;
+  products
+    .map((p,i)=>({p,i}))
+    .filter(o=>!fc||o.p.category===fc)
+    .forEach(o=>{
+      const d=document.createElement('div');
+      d.className='item';
+      d.textContent=o.p.name||o.p.itemName||'(No Name)';
+      d.onclick=()=>selectItem(o.i);
+      itemList.appendChild(d);
+    });
+}
+
+filterCategory.onchange=buildList;
+
+/* ---------- VIEW / EDIT ---------- */
+
+function setReadonly(state){
+  document.querySelectorAll('#card input, #card select').forEach(el=>{
+    if(el.id==='costPc'||el.id==='suggested') return;
+    el.readOnly = state;
+    if(el.tagName==='SELECT') el.disabled = state;
+  });
+}
+
+function enterEdit(){
+  editMode=true;
+  setReadonly(false);
+  editBtn.style.display='none';
+  saveBtn.style.display='block';
+  itemName.focus();
+  itemName.select();
+}
+
+function exitEdit(){
+  editMode=false;
+  setReadonly(true);
+  editBtn.style.display='block';
+  saveBtn.style.display='none';
+}
+
+function selectItem(i){
+  index=i;
+  const p=products[i];
+  card.style.display='block';
+  exitEdit();
+
+  itemName.value=p.name??p.itemName??'';
+  barcode.value=p.barcode||'';
+  category.value=p.category||'';
+  packs.value=p.packs??0;
+  pcs.value=p.pcsPerPack??1;
+  costPack.value=p.costPerPack??0;
+  costPc.value=p.cost??0;
+  sellPrice.value=p.sellPrice??0;
+  suggested.value=p.suggestedSellPrice??0;
+  markup.value=p.markup??0;
+}
+
+/* ---------- ADD ---------- */
+
+function addItem(){
+  products.push({
+    name:'',
+    barcode:'',
+    category:'',
+    packs:0,
+    pcsPerPack:1,
+    costPerPack:0,
+    cost:0,
+    sellPrice:0,
+    suggestedSellPrice:0,
+    markup:0
+  });
+  index=products.length-1;
+  saveRaw();
+  load();
+  selectItem(index);
+  enterEdit();
+}
+
+/* ---------- SAVE ---------- */
+
+function saveItem(){
+  if(index<0) return;
+  const p=products[index];
+
+  p.name=itemName.value;
+  p.barcode=barcode.value;
+  p.category=category.value;
+  p.packs=+packs.value||0;
+  p.pcsPerPack=+pcs.value||1;
+  p.costPerPack=+costPack.value||0;
+  p.cost=+costPc.value||0;
+  p.sellPrice=+sellPrice.value||0;
+  p.suggestedSellPrice=+suggested.value||0;
+  p.markup=+markup.value||0;
+
+  saveRaw();
+  load();
+  exitEdit();
+}
+
+/* ---------- SEARCH ---------- */
+
+searchInput.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    e.preventDefault();
+    const q=searchInput.value.trim().toLowerCase();
+    const i=products.findIndex(p=>{
+      const bars=(p.barcode||'').toLowerCase().split(/\s+/);
+      return bars.includes(q) ||
+        (p.name||p.itemName||'').toLowerCase().includes(q);
+    });
+    if(i>-1) selectItem(i);
+    searchInput.select();
+  }
+});
+
+function saveRaw(){
+  localStorage.setItem(KEY,JSON.stringify(products));
+}
+
+load();
+</script>
+
+</body>
+</html>
