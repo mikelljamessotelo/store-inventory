@@ -3,422 +3,410 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inventory Editor</title>
+<title>Inventory Mirror (Cards)</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+39&display=swap" rel="stylesheet">
 
 <style>
 :root{
-  --bg:#f3f4f6;
+  --bg:#e5e7eb;
   --card:#ffffff;
-  --border:#cbd5e1;
+  --border:#d1d5db;
+  --yellow:#fff9c4;
   --text:#111827;
-  --green:#4caf50;
-  --yellow:#fff7cc;
-  --red:#ef4444;
-  --input-bg:#f8fafc;
-  --input-ro:#eef2f7;
+  --green:#22c55e;
 }
 
-*{
-  box-sizing:border-box;
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,system-ui,Arial,sans-serif;
-  font-size:16px;
-}
-
+html,body{height:100%}
 body{
   margin:0;
   background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,Arial,sans-serif;
   color:var(--text);
-}
-
-/* LAYOUT */
-.app{
-  display:grid;
-  grid-template-columns:340px 1fr; /* WIDER LIST */
-  height:100vh;
-}
-
-/* SIDEBAR */
-.sidebar{
-  background:#fff;
-  border-right:1px solid var(--border);
-  padding:14px;
+  font-size:16px;
   display:flex;
   flex-direction:column;
-  overflow:hidden;
+  text-align:center;
 }
-.sidebar.hidden{ display:none; }
 
-.sidebar select,
-.sidebar button{
-  margin-bottom:10px;
+/* HEADER */
+.header{
   padding:12px;
-  border-radius:10px;
-  border:1.5px solid var(--border);
-  background:var(--input-bg);
-}
-
-.item-list{
-  flex:1;
-  overflow-y:auto; /* SCROLL LIST ONLY */
-}
-
-.item{
-  padding:12px;
-  border-radius:10px;
-  cursor:pointer;
-}
-.item:hover{ background:#e5edf8; }
-
-/* MAIN */
-.main{
-  padding:16px;
-  overflow:hidden; /* FORM DOES NOT SCROLL WITH LIST */
-}
-
-.top-bar{
-  display:flex;
-  gap:10px;
-  margin-bottom:14px;
-}
-
-.toggle-btn{
-  padding:14px 16px;
-  border-radius:12px;
-  border:1.5px solid var(--border);
-  background:#fff;
+  background:var(--bg);
 }
 
 /* SEARCH */
 .search input{
   width:100%;
-  padding:18px;
-  font-size:20px;
-  text-align:center;
-  border-radius:14px;
-  border:1.5px solid var(--border);
-  background:var(--input-bg);
-}
-
-/* CARD */
-.card{
-  margin-top:18px;
-  background:var(--card);
-  border-radius:18px;
-  padding:24px;
-  box-shadow:0 20px 40px rgba(0,0,0,.12);
-  display:none;
-}
-
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:16px;
-}
-.full{ grid-column:1/-1; }
-
-label{
-  display:block;
-  margin-bottom:6px;
-  color:#000;
-}
-
-input, select{
-  width:100%;
   padding:14px;
   font-size:18px;
   border-radius:12px;
   border:1.5px solid var(--border);
-  background:var(--input-bg);
+  text-align:center;
 }
 
-input[readonly], select:disabled{
-  background:var(--input-ro);
+/* CONTENT */
+.content{
+  flex:1;
+  overflow-y:auto;
+  padding:12px;
 }
 
-/* SELL */
+/* GRID */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:14px;
+}
+@media(max-width:480px){
+  .grid{grid-template-columns:1fr;}
+}
+
+/* CARD */
+.card{
+  background:var(--card);
+  border-radius:16px;
+  padding:14px;
+  border:1px solid var(--border);
+  box-shadow:0 6px 18px rgba(0,0,0,.12);
+  cursor:pointer;
+}
+
+/* TEXT */
+.name{font-size:18px;font-weight:600;margin-bottom:6px;}
 .sell{
   background:var(--yellow);
-  font-weight:700;
+  border-radius:12px;
+  padding:12px;
+  font-size:26px;
+  font-weight:800;
+  margin-bottom:8px;
 }
+.category{font-size:14px;font-weight:600;margin-bottom:8px;}
 
-/* ACTIONS */
-.actions{
-  display:flex;
-  gap:12px;
-  margin-top:22px;
+/* 2 COL */
+.two-col{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px 12px;
 }
+.field{
+  background:#f9fafb;
+  border-radius:10px;
+  padding:8px;
+}
+.value{font-weight:600;}
+.label{font-size:12px;color:#6b7280;}
+.disabled{opacity:.45}
 
-.actions button{
-  flex:1;
+/* ZOOM */
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.5);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:50;
+}
+.zoom-card{
+  background:#fff;
+  border-radius:18px;
   padding:16px;
-  border-radius:14px;
-  border:none;
+  max-width:520px;
+  width:94%;
+}
+
+/* INPUTS */
+.zoom-card input{
+  width:100%;
+  padding:6px;
+  text-align:center;
+  border-radius:8px;
+  border:1px solid var(--border);
   font-size:16px;
 }
-
-.edit{ background:#fff; border:1.5px solid var(--border); }
-.save{ background:var(--green); color:#fff; display:none; }
-.delete{ background:#fff; border:1.5px solid var(--red); color:var(--red); }
-
-@media(max-width:900px){
-  .app{ grid-template-columns:1fr; }
-  .sidebar{
-    position:absolute;
-    z-index:10;
-    height:100%;
-  }
+.zoom-card input[readonly]{
+  background:#f3f4f6;
 }
+
+/* BUTTONS */
+.actions{
+  display:flex;
+  gap:8px;
+  margin-top:12px;
+}
+.actions button{
+  flex:1;
+  padding:10px;
+  font-size:14px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:#fff;
+}
+
+/* FLOATING ADD BUTTON */
+.fab{
+  position:fixed;
+  right:18px;
+  bottom:18px;
+  width:56px;
+  height:56px;
+  border-radius:50%;
+  background:var(--green);
+  color:#fff;
+  font-size:32px;
+  font-weight:700;
+  border:none;
+  box-shadow:0 12px 30px rgba(0,0,0,.3);
+  cursor:pointer;
+  z-index:60;
+}
+
+/* BARCODE */
+.barcode-wrap{
+  margin-top:12px;
+  padding-top:8px;
+  border-top:1px dashed var(--border);
+}
+.barcode{
+  font-family:"Libre Barcode 39", monospace;
+  font-size:36px;
+  letter-spacing:-2px;
+}
+.barcode-text{font-size:12px;color:#6b7280;}
 </style>
 </head>
 
 <body>
 
-<div class="app">
-
-  <!-- SIDEBAR -->
-  <div class="sidebar" id="sidebar">
-    <select id="filterCategory"></select>
-    <button onclick="addItem()">➕ Add Item</button>
-    <div class="item-list" id="itemList"></div>
+<div class="header">
+  <div class="search">
+    <input id="searchInput" list="suggestions" placeholder="Search item name or barcode">
+    <datalist id="suggestions"></datalist>
   </div>
+</div>
 
-  <!-- MAIN -->
-  <div class="main">
-    <div class="top-bar">
-      <button class="toggle-btn" onclick="toggleSidebar()">☰ Items</button>
-      <div class="search">
-        <input id="searchInput" placeholder="Scan barcode or type item name">
-      </div>
-    </div>
+<div class="content">
+  <div class="grid" id="grid"></div>
+</div>
 
-    <div class="card" id="card">
-      <div class="grid">
+<!-- FLOATING ADD -->
+<button class="fab" onclick="addNew()">＋</button>
 
-        <div>
-          <label>Category</label>
-          <select id="category" disabled></select>
-        </div>
-
-        <div>
-          <label>Barcode(s)</label>
-          <input id="barcode" readonly>
-        </div>
-
-        <div class="full">
-          <label>Item Name</label>
-          <input id="itemName" readonly>
-        </div>
-
-        <div>
-          <label>Packs</label>
-          <input id="packs" readonly>
-        </div>
-
-        <div>
-          <label>Pcs / Pack</label>
-          <input id="pcs" readonly>
-        </div>
-
-        <div>
-          <label>Cost / Pack</label>
-          <input id="costPack" readonly>
-        </div>
-
-        <div>
-          <label>Cost (auto)</label>
-          <input id="costPc" readonly>
-        </div>
-
-        <div>
-          <label>Sell Price</label>
-          <input id="sellPrice" class="sell" readonly>
-        </div>
-
-        <div>
-          <label>Suggested</label>
-          <input id="suggested" readonly>
-        </div>
-
-        <div>
-          <label>Markup</label>
-          <input id="markup" readonly>
-        </div>
-
-      </div>
-
-      <div class="actions">
-        <button class="edit" id="editBtn" onclick="enterEdit()">Edit</button>
-        <button class="save" id="saveBtn" onclick="saveItem()">Save</button>
-        <button class="delete">Delete</button>
-      </div>
-    </div>
-  </div>
-
+<!-- ZOOM -->
+<div class="overlay" id="overlay" onclick="closeZoom(event)">
+  <div class="zoom-card" id="zoomCard"></div>
 </div>
 
 <script>
-const KEY = 'store_inventory_v3_2_7';
-let products=[], index=-1;
+const KEY='store_inventory_v3_2_7';
+let products=[];
+let currentItem=null;
+let originalSnapshot=null;
 let editMode=false;
+let isNew=false;
 
-/* ---------- GLOBAL ---------- */
+/* FORMATTERS */
+const f2=v=>v==null||v===''||isNaN(v)?'':Number(v).toFixed(2);
+const f0=v=>v==null||v===''||isNaN(v)?'':Math.trunc(Number(v));
 
-function toggleSidebar(){
-  sidebar.classList.toggle('hidden');
+function load(){
+  products=JSON.parse(localStorage.getItem(KEY))||[];
+  buildSuggestions();
+  render(products);
+}
+function saveAll(){
+  localStorage.setItem(KEY,JSON.stringify(products));
 }
 
-/* ESC cancels edit + focus search */
+/* SUGGESTIONS */
+function buildSuggestions(){
+  suggestions.innerHTML='';
+  products.forEach(p=>{
+    if(p.name){
+      const o=document.createElement('option');
+      o.value=p.name;
+      suggestions.appendChild(o);
+    }
+    if(p.barcode){
+      const o=document.createElement('option');
+      o.value=p.barcode;
+      suggestions.appendChild(o);
+    }
+  });
+}
+
+/* RENDER */
+function render(list){
+  grid.innerHTML='';
+  list.forEach(p=>{
+    const pcs=f0(p.pcsPerPack)||1;
+    const mupPack=(Number(p.markup)||0)*pcs;
+
+    const d=document.createElement('div');
+    d.className='card';
+    d.innerHTML=`
+      <div class="name">${p.name||'(No name)'}</div>
+      <div class="sell">₱ ${f2(p.sellPrice)}</div>
+      <div class="category">${p.category||'-'}</div>
+
+      <div class="two-col">
+        ${fieldView(f0(p.packs),'Pack')}
+        ${fieldView(f0(p.pcsPerPack),'Pcs / Pack')}
+        ${fieldView(f2(p.costPerPack),'Cost / Pack')}
+        ${fieldView(f2(p.cost),'Cost / PC')}
+        ${fieldView(f2(p.suggestedSellPrice),'Suggested')}
+        ${fieldView(f2(p.markup),'Mark-up')}
+        <div class="field ${pcs===1?'disabled':''}">
+          <div class="value">${pcs===1?'':f2(mupPack)}</div>
+          <div class="label">Mark-up / Pack</div>
+        </div>
+      </div>
+    `;
+    d.onclick=()=>openZoom(p,false);
+    grid.appendChild(d);
+  });
+}
+
+function fieldView(v,l){
+  return `<div class="field"><div class="value">${v||''}</div><div class="label">${l}</div></div>`;
+}
+
+/* ADD NEW */
+function addNew(){
+  currentItem={
+    name:'',
+    barcode:'',
+    category:'',
+    packs:'',
+    pcsPerPack:'',
+    costPerPack:'',
+    cost:'',
+    suggestedSellPrice:'',
+    sellPrice:'',
+    markup:''
+  };
+  originalSnapshot=null;
+  editMode=true;
+  isNew=true;
+  drawZoom();
+  overlay.style.display='flex';
+}
+
+/* ZOOM */
+function openZoom(p){
+  currentItem=p;
+  originalSnapshot=JSON.parse(JSON.stringify(p));
+  editMode=false;
+  isNew=false;
+  drawZoom();
+  overlay.style.display='flex';
+}
+
+function drawZoom(){
+  const p=currentItem;
+  const pcs=f0(p.pcsPerPack)||1;
+  const mupPack=(Number(p.markup)||0)*pcs;
+
+  zoomCard.innerHTML=`
+    <div class="two-col">
+      ${zField('name','Item Name',p.name,'text')}
+      ${zField('barcode','Barcode',p.barcode,'text')}
+      ${zField('category','Category',p.category,'text')}
+
+      ${zField('packs','Pack',f0(p.packs),'number',1)}
+      ${zField('pcsPerPack','Pcs / Pack',f0(p.pcsPerPack),'number',1)}
+
+      ${zField('costPerPack','Cost / Pack',f2(p.costPerPack),'number')}
+      ${zField('cost','Cost / PC',f2(p.cost),'number')}
+      ${zField('suggestedSellPrice','Suggested',f2(p.suggestedSellPrice),'number')}
+      ${zField('sellPrice','Sell Price',f2(p.sellPrice),'number')}
+      ${zField('markup','Mark-up',f2(p.markup),'number')}
+
+      <div class="field ${pcs===1?'disabled':''}">
+        <div class="value">${pcs===1?'':f2(mupPack)}</div>
+        <div class="label">Mark-up / Pack</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      ${
+        editMode
+          ? `<button onclick="saveEdit()">Save</button>
+             <button onclick="cancelEdit()">Cancel</button>`
+          : `<button onclick="enableEdit()">Edit</button>
+             <button onclick="closeZoom()">Close</button>`
+      }
+    </div>
+  `;
+}
+
+function zField(key,label,val,type,step1){
+  const readonly = editMode ? '' : 'readonly';
+  const step = step1 ? 'step="1"' : 'step="0.01"';
+  const inputmode = type==='number' ? 'inputmode="decimal"' : '';
+  return `
+    <div class="field">
+      <input data-key="${key}" type="${type}"
+             ${readonly} ${type==='number'?step:''} ${inputmode}
+             value="${val||''}">
+      <div class="label">${label}</div>
+    </div>
+  `;
+}
+
+function enableEdit(){ editMode=true; drawZoom(); }
+function cancelEdit(){
+  if(isNew){
+    overlay.style.display='none';
+    return;
+  }
+  Object.assign(currentItem,originalSnapshot);
+  editMode=false;
+  drawZoom();
+}
+function saveEdit(){
+  zoomCard.querySelectorAll('input').forEach(i=>{
+    currentItem[i.dataset.key]=i.value;
+  });
+
+  if(isNew){
+    products.push(currentItem);
+    isNew=false;
+  }
+
+  saveAll();
+  render(products);
+  overlay.style.display='none';
+}
+
+function closeZoom(e){
+  if(!e || e.target===overlay){
+    overlay.style.display='none';
+  }
+}
+
+/* SEARCH */
+searchInput.addEventListener('input',()=>{
+  const q=searchInput.value.toLowerCase().trim();
+  if(!q){render(products);return;}
+  render(products.filter(p=>
+    (p.name||'').toLowerCase().includes(q) ||
+    (p.barcode||'').toLowerCase().includes(q)
+  ));
+});
+
+/* ESC */
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
-    exitEdit();
+    overlay.style.display='none';
+    searchInput.value='';
+    render(products);
     searchInput.focus();
     searchInput.select();
   }
 });
-
-/* ---------- LOAD ---------- */
-
-function load(){
-  products = JSON.parse(localStorage.getItem(KEY)) || [];
-  products.sort((a,b)=>(a.name||a.itemName||'').localeCompare(b.name||b.itemName||''));
-  buildCategories();
-  buildList();
-}
-
-function buildCategories(){
-  const cats=[...new Set(products.map(p=>p.category).filter(Boolean))];
-  filterCategory.innerHTML='<option value="">All Categories</option>';
-  category.innerHTML='';
-  cats.forEach(c=>{
-    filterCategory.innerHTML+=`<option>${c}</option>`;
-    category.innerHTML+=`<option>${c}</option>`;
-  });
-}
-
-function buildList(){
-  itemList.innerHTML='';
-  const fc=filterCategory.value;
-  products
-    .map((p,i)=>({p,i}))
-    .filter(o=>!fc||o.p.category===fc)
-    .forEach(o=>{
-      const d=document.createElement('div');
-      d.className='item';
-      d.textContent=o.p.name||o.p.itemName||'(No Name)';
-      d.onclick=()=>selectItem(o.i);
-      itemList.appendChild(d);
-    });
-}
-
-filterCategory.onchange=buildList;
-
-/* ---------- VIEW / EDIT ---------- */
-
-function setReadonly(state){
-  document.querySelectorAll('#card input, #card select').forEach(el=>{
-    if(el.id==='costPc'||el.id==='suggested') return;
-    el.readOnly = state;
-    if(el.tagName==='SELECT') el.disabled = state;
-  });
-}
-
-function enterEdit(){
-  editMode=true;
-  setReadonly(false);
-  editBtn.style.display='none';
-  saveBtn.style.display='block';
-  itemName.focus();
-  itemName.select();
-}
-
-function exitEdit(){
-  editMode=false;
-  setReadonly(true);
-  editBtn.style.display='block';
-  saveBtn.style.display='none';
-}
-
-function selectItem(i){
-  index=i;
-  const p=products[i];
-  card.style.display='block';
-  exitEdit();
-
-  itemName.value=p.name??p.itemName??'';
-  barcode.value=p.barcode||'';
-  category.value=p.category||'';
-  packs.value=p.packs??0;
-  pcs.value=p.pcsPerPack??1;
-  costPack.value=p.costPerPack??0;
-  costPc.value=p.cost??0;
-  sellPrice.value=p.sellPrice??0;
-  suggested.value=p.suggestedSellPrice??0;
-  markup.value=p.markup??0;
-}
-
-/* ---------- ADD ---------- */
-
-function addItem(){
-  products.push({
-    name:'',
-    barcode:'',
-    category:'',
-    packs:0,
-    pcsPerPack:1,
-    costPerPack:0,
-    cost:0,
-    sellPrice:0,
-    suggestedSellPrice:0,
-    markup:0
-  });
-  index=products.length-1;
-  saveRaw();
-  load();
-  selectItem(index);
-  enterEdit();
-}
-
-/* ---------- SAVE ---------- */
-
-function saveItem(){
-  if(index<0) return;
-  const p=products[index];
-
-  p.name=itemName.value;
-  p.barcode=barcode.value;
-  p.category=category.value;
-  p.packs=+packs.value||0;
-  p.pcsPerPack=+pcs.value||1;
-  p.costPerPack=+costPack.value||0;
-  p.cost=+costPc.value||0;
-  p.sellPrice=+sellPrice.value||0;
-  p.suggestedSellPrice=+suggested.value||0;
-  p.markup=+markup.value||0;
-
-  saveRaw();
-  load();
-  exitEdit();
-}
-
-/* ---------- SEARCH ---------- */
-
-searchInput.addEventListener('keydown',e=>{
-  if(e.key==='Enter'){
-    e.preventDefault();
-    const q=searchInput.value.trim().toLowerCase();
-    const i=products.findIndex(p=>{
-      const bars=(p.barcode||'').toLowerCase().split(/\s+/);
-      return bars.includes(q) ||
-        (p.name||p.itemName||'').toLowerCase().includes(q);
-    });
-    if(i>-1) selectItem(i);
-    searchInput.select();
-  }
-});
-
-function saveRaw(){
-  localStorage.setItem(KEY,JSON.stringify(products));
-}
 
 load();
 </script>
