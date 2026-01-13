@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory Cards</title>
+
+<style>
+body{margin:0;font-family:system-ui;background:#f4f6f8}
+header{background:#0a8acb;color:#fff;padding:14px;font-weight:600}
+.search{padding:10px}
+.search input{width:100%;padding:12px;border-radius:10px;border:1px solid #ddd}
+.list{padding:10px}
+.card{background:#fff;border-radius:14px;padding:12px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.card.selected{outline:3px solid #0a8acb}
+h3{margin:0 0 6px;font-size:16px;word-break:break-word}
+.row{display:flex;justify-content:space-between}
+.label{font-size:12px;color:#777}
+.value{font-weight:600}
+.profit{color:#17a34a}
+
+.fab{position:fixed;bottom:16px;right:16px;display:flex;flex-direction:column;gap:10px}
+.fab button{width:56px;height:56px;border:none;border-radius:50%;font-size:22px;color:#fff}
+.add{background:#0a8acb}
+.edit{background:#444}
+.bulk{background:#f97316}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center}
+.modal-content{background:#fff;width:90%;max-width:420px;border-radius:14px;padding:14px}
+.modal-content input{width:100%;padding:10px;margin-bottom:8px;border-radius:8px;border:1px solid #ccc}
+.modal-content input[disabled]{background:#eee}
+.actions{display:flex;gap:10px}
+.actions button{flex:1;padding:10px;border:none;border-radius:8px}
+
+.bulk-input{width:100%;padding:6px;border-radius:6px;border:1px solid #ccc}
+</style>
+</head>
+
+<body>
+
+<header>Products</header>
+
+<div class="search">
+  <input id="search" placeholder="Search products or scan barcode..." oninput="render()">
+</div>
+
+<div class="list" id="list"></div>
+
+<div class="fab">
+  <button class="bulk" onclick="toggleBulk()">🧾</button>
+  <button class="edit" onclick="editItem()">✏️</button>
+  <button class="add" onclick="openModal()">➕</button>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h3 id="modalTitle">Add Item</h3>
+    <input id="barcode" placeholder="Barcode">
+    <input id="name" placeholder="Item name">
+    <input id="cost" type="number" placeholder="Cost" oninput="recalc()">
+    <input id="price" type="number" placeholder="Price">
+    <input id="pcs" type="number" placeholder="Pcs per pack" oninput="recalc()">
+    <input id="pack" type="number" placeholder="Cost per pack" oninput="recalc()">
+    <div class="actions">
+      <button onclick="save()">Save</button>
+      <button onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let items=JSON.parse(localStorage.getItem('items')||'[]');
+let selected=null;
+let editing=null;
+let bulk=false;
+let buffer='';
+
+document.addEventListener('keypress',e=>{
+  if(e.key==='Enter'){
+    const match=items.findIndex(i=>i.barcode===buffer);
+    if(match>-1){selected=match;render();}
+    buffer='';
+  }else{
+    buffer+=e.key;
+  }
+});
+
+function persist(){localStorage.setItem('items',JSON.stringify(items))}
+
+function render(){
+  const q=search.value.toLowerCase();
+  list.innerHTML='';
+  items.forEach((i,idx)=>{
+    if(q && !i.name.toLowerCase().includes(q) && i.barcode!==q)return;
+    const profit=(i.price-i.cost).toFixed(2);
+    const card=document.createElement('div');
+    card.className='card'+(selected===idx?' selected':'');
+    card.onclick=()=>selected=idx;
+    card.innerHTML=bulk?`
+      <input class="bulk-input" value="${i.name}" onchange="i.name=this.value">
+      <div class="row">
+        <input class="bulk-input" type="number" value="${i.price}" onchange="i.price=+this.value">
+        <input class="bulk-input" type="number" value="${i.cost}" onchange="i.cost=+this.value">
+        <div class="value profit">₱${profit}</div>
+      </div>
+    `:`
+      <h3>${i.name}</h3>
+      <div class="row">
+        <div><div class="label">Price</div><div class="value">₱${i.price.toFixed(2)}</div></div>
+        <div><div class="label">Cost</div><div class="value">₱${i.cost.toFixed(2)}</div></div>
+        <div><div class="label">Profit</div><div class="value profit">₱${profit}</div></div>
+      </div>`;
+    list.appendChild(card);
+  });
+  persist();
+}
+
+function toggleBulk(){bulk=!bulk;render()}
+
+function openModal(edit=false){
+  modal.style.display='flex';
+  modalTitle.textContent=edit?'Edit Item':'Add Item';
+}
+
+function closeModal(){modal.style.display='none';editing=null}
+
+function recalc(){
+  if(pcs.value && pack.value){
+    price.value=(pack.value/pcs.value).toFixed(2);
+    price.disabled=true;
+  }else price.disabled=false;
+}
+
+function save(){
+  const item={
+    barcode:barcode.value,
+    name:name.value,
+    cost:+cost.value||0,
+    price:+price.value||0,
+    pcs:+pcs.value||0,
+    pack:+pack.value||0
+  };
+  if(editing!==null)items[editing]=item;
+  else items.push(item);
+  closeModal();render();
+}
+
+function editItem(){
+  if(selected===null)return alert('Select item');
+  editing=selected;
+  const i=items[selected];
+  openModal(true);
+  barcode.value=i.barcode;
+  name.value=i.name;
+  cost.value=i.cost;
+  price.value=i.price;
+  pcs.value=i.pcs;
+  pack.value=i.pack;
+  recalc();
+}
+
+render();
+</script>
+
+</body>
+</html>
