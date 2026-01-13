@@ -6,33 +6,188 @@
 <title>Inventory Cards</title>
 
 <style>
-body{margin:0;font-family:system-ui;background:#f4f6f8}
-header{background:#0a8acb;color:#fff;padding:14px;font-weight:600}
-.search{padding:10px}
-.search input{width:100%;padding:12px;border-radius:10px;border:1px solid #ddd}
-.list{padding:10px}
-.card{background:#fff;border-radius:14px;padding:12px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.1)}
-.card.selected{outline:3px solid #0a8acb}
-h3{margin:0 0 6px;font-size:16px;word-break:break-word}
-.row{display:flex;justify-content:space-between}
-.label{font-size:12px;color:#777}
-.value{font-weight:600}
-.profit{color:#17a34a}
+/* ===== BASE ===== */
+* {
+  box-sizing: border-box;
+}
 
-.fab{position:fixed;bottom:16px;right:16px;display:flex;flex-direction:column;gap:10px}
-.fab button{width:56px;height:56px;border:none;border-radius:50%;font-size:22px;color:#fff}
-.add{background:#0a8acb}
-.edit{background:#444}
-.bulk{background:#f97316}
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f4f6f8;
+  font-size: 16px;
+}
 
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center}
-.modal-content{background:#fff;width:90%;max-width:420px;border-radius:14px;padding:14px}
-.modal-content input{width:100%;padding:10px;margin-bottom:8px;border-radius:8px;border:1px solid #ccc}
-.modal-content input[disabled]{background:#eee}
-.actions{display:flex;gap:10px}
-.actions button{flex:1;padding:10px;border:none;border-radius:8px}
+/* ===== HEADER ===== */
+header {
+  background: #0a8acb;
+  color: #fff;
+  padding: 14px 16px;
+  font-weight: 600;
+  font-size: 16px;
+}
 
-.bulk-input{width:100%;padding:6px;border-radius:6px;border:1px solid #ccc}
+/* ===== SEARCH ===== */
+.search {
+  padding: 12px 16px;
+}
+
+.search input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 16px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+}
+
+/* ===== LIST & CARDS ===== */
+.list {
+  padding: 12px 16px 120px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+
+.card.selected {
+  outline: 3px solid #0a8acb;
+}
+
+.card h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 700; /* BOLD ITEM NAME */
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+/* ===== PRICE ROW ===== */
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.label {
+  font-size: 13px;
+  color: #777;
+}
+
+.value {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.profit {
+  color: #16a34a;
+}
+
+/* ===== FLOATING BUTTONS ===== */
+.fab {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fab button {
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  font-size: 22px;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,.25);
+}
+
+.add { background: #0a8acb; }
+.edit { background: #444; }
+.bulk { background: #f97316; }
+
+/* ===== MODAL ===== */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal-content {
+  background: #fff;
+  width: 100%;
+  max-width: 420px; /* iPad friendly */
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* PREVENT OVERLAP */
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-content h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* ===== INPUTS ===== */
+.modal-content input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 16px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
+
+.modal-content input:disabled {
+  background: #eee;
+  color: #555;
+}
+
+/* ===== ACTION BUTTONS ===== */
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.actions button {
+  flex: 1;
+  padding: 12px;
+  font-size: 16px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.actions button:first-child {
+  background: #0a8acb;
+  color: #fff;
+}
+
+.actions button:last-child {
+  background: #e5e7eb;
+}
+
+/* ===== BULK MODE INPUTS ===== */
+.bulk-input {
+  width: 100%;
+  padding: 8px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
 </style>
 </head>
 
