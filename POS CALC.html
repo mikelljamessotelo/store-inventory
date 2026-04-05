@@ -123,9 +123,9 @@ input {
 
     <div class="row">
       CASH:
-      <input class="cash" type="text" id="cash"
+      <input class="cash" type="number" inputmode="decimal" id="cash"
         onfocus="autoSelect(this)"
-        oninput="cleanNumber(this); computeChange()">
+        oninput="computeChange()">
     </div>
 
     <div class="cash-buttons" id="cashButtons"></div>
@@ -151,11 +151,6 @@ input {
 const denominations = [20, 50, 100, 200, 500, 1000];
 
 function autoSelect(el) { el.select(); }
-
-// allow only numbers + dot
-function cleanNumber(el) {
-  el.value = el.value.replace(/[^0-9.]/g, '');
-}
 
 function handleEnter(e, el, type) {
   if (e.key === "Enter") {
@@ -205,14 +200,14 @@ function addRow(autoFocus = true) {
   const row = document.createElement('tr');
 
   row.innerHTML = `
-    <td><input type="text"
+    <td><input type="number" inputmode="decimal"
       onfocus="autoSelect(this)"
-      oninput="cleanNumber(this); handlePrice(this)"
+      oninput="handlePrice(this)"
       onkeydown="handleEnter(event, this, 'price')"></td>
 
-    <td><input type="text" value="1"
+    <td><input type="number" inputmode="decimal" value="1"
       onfocus="autoSelect(this)"
-      oninput="cleanNumber(this); computeRow(this)"
+      oninput="computeRow(this)"
       onkeydown="handleEnter(event, this, 'qty')"></td>
 
     <td><span>0.00</span></td>
