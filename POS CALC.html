@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POS Tablet Mode</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #eef2f7;
+}
+
+.container {
+  padding: 12px;
+}
+
+/* SUMMARY */
+.summary {
+  background: #111827;
+  color: #fff;
+  padding: 15px;
+  border-radius: 12px;
+}
+
+.amount-box {
+  font-size: 26px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.change.negative {
+  color: #ef4444;
+}
+
+.change.positive {
+  color: #22c55e;
+}
+
+/* CASH INPUT */
+.row {
+  margin-top: 12px;
+}
+
+input.cash {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 14px;
+  font-size: 20px;
+  border-radius: 8px;
+  border: none;
+  margin-top: 5px;
+}
+
+/* CASH BUTTONS */
+.cash-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.cash-btn {
+  padding: 14px;
+  font-size: 18px;
+  border: none;
+  border-radius: 8px;
+  background: #22c55e;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* TABLE */
+table {
+  width: 100%;
+  margin-top: 12px;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+thead {
+  background: #1f2937;
+  color: #fff;
+}
+
+th, td {
+  width: 25%;
+  padding: 12px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  font-size: 18px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.delete-btn {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ADD BUTTON */
+.add-btn {
+  margin-top: 10px;
+  width: 100%;
+  padding: 14px;
+  font-size: 18px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <!-- SUMMARY -->
+  <div class="summary">
+
+    <div class="amount-box">
+      TOTAL: ₱ <span id="total">0.00</span>
+    </div>
+
+    <div class="amount-box change" id="changeBox">
+      CHANGE: ₱ <span id="change">0.00</span>
+    </div>
+
+    <div class="row">
+      CASH:
+      <input class="cash" type="number" inputmode="decimal" id="cash"
+        onfocus="autoSelect(this)"
+        oninput="computeChange()">
+    </div>
+
+    <div class="cash-buttons" id="cashButtons"></div>
+  </div>
+
+  <!-- TABLE -->
+  <table>
+    <thead>
+      <tr>
+        <th>PRICE</th>
+        <th>QTY</th>
+        <th>AMOUNT</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <button class="add-btn" onclick="addRow()">+ Add Item</button>
+
+</div>
+
+<script>
+const denominations = [20, 50, 100, 200, 500, 1000];
+
+function autoSelect(el) {
+  el.select();
+}
+
+function renderCashButtons() {
+  const total = parseFloat(document.getElementById('total').textContent) || 0;
+  const container = document.getElementById('cashButtons');
+  container.innerHTML = "";
+
+  denominations.forEach(val => {
+    if (val >= total) {
+      const btn = document.createElement('button');
+      btn.className = "cash-btn";
+      btn.textContent = "₱" + val;
+      btn.onclick = () => setCash(val);
+      container.appendChild(btn);
+    }
+  });
+}
+
+function setCash(val) {
+  document.getElementById('cash').value = val;
+  computeChange();
+}
+
+function addRow(autoFocus = true) {
+  const tbody = document.getElementById('tbody');
+
+  const row = document.createElement('tr');
+
+  row.innerHTML = `
+    <td><input type="number" inputmode="decimal"
+      onfocus="autoSelect(this)"
+      oninput="handlePrice(this)"></td>
+
+    <td><input type="number" inputmode="decimal" value="1"
+      onfocus="autoSelect(this)"
+      oninput="computeRow(this)"></td>
+
+    <td><span>0.00</span></td>
+
+    <td><button class="delete-btn" onclick="deleteRow(this)">✕</button></td>
+  `;
+
+  tbody.appendChild(row);
+
+  if (autoFocus) row.querySelector('input').focus();
+}
+
+function deleteRow(btn) {
+  btn.closest('tr').remove();
+  computeTotal();
+}
+
+function handlePrice(el) {
+  const row = el.closest('tr');
+
+  computeRow(el);
+
+  if (row === document.querySelector('#tbody tr:last-child') && el.value !== "") {
+    addRow(false);
+  }
+}
+
+function computeRow(el) {
+  const row = el.closest('tr');
+
+  const price = parseFloat(row.children[0].querySelector('input').value) || 0;
+  const qty = parseFloat(row.children[1].querySelector('input').value) || 0;
+
+  const amount = price * qty;
+  row.children[2].querySelector('span').textContent = amount.toFixed(2);
+
+  computeTotal();
+}
+
+function computeTotal() {
+  let total = 0;
+
+  document.querySelectorAll('#tbody tr').forEach(row => {
+    total += parseFloat(row.children[2].textContent) || 0;
+  });
+
+  document.getElementById('total').textContent = total.toFixed(2);
+
+  renderCashButtons();
+  computeChange();
+}
+
+function computeChange() {
+  const total = parseFloat(document.getElementById('total').textContent) || 0;
+  const cash = parseFloat(document.getElementById('cash').value) || 0;
+
+  const change = cash - total;
+
+  const changeEl = document.getElementById('change');
+  const changeBox = document.getElementById('changeBox');
+
+  if (cash === 0) {
+    changeEl.textContent = "0.00";
+    changeBox.classList.remove("positive", "negative");
+    return;
+  }
+
+  changeEl.textContent = change.toFixed(2);
+
+  if (change < 0) {
+    changeBox.classList.add("negative");
+    changeBox.classList.remove("positive");
+  } else {
+    changeBox.classList.add("positive");
+    changeBox.classList.remove("negative");
+  }
+}
+
+// init
+addRow();
+renderCashButtons();
+</script>
+
+</body>
+</html>
