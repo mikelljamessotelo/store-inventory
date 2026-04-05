@@ -16,7 +16,6 @@ body {
   padding: 12px;
 }
 
-/* SUMMARY */
 .summary {
   background: #111827;
   color: #fff;
@@ -30,31 +29,20 @@ body {
   margin-bottom: 5px;
 }
 
-.change.negative {
-  color: #ef4444;
-}
+.change.negative { color: #ef4444; }
+.change.positive { color: #22c55e; }
 
-.change.positive {
-  color: #22c55e;
-}
-
-/* CASH INPUT */
-.row {
-  margin-top: 12px;
-}
+.row { margin-top: 12px; }
 
 input.cash {
   width: 100%;
-  max-width: 100%;
   box-sizing: border-box;
   padding: 14px;
   font-size: 20px;
   border-radius: 8px;
   border: none;
-  margin-top: 5px;
 }
 
-/* CASH BUTTONS */
 .cash-buttons {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -69,10 +57,8 @@ input.cash {
   border-radius: 8px;
   background: #22c55e;
   color: #fff;
-  cursor: pointer;
 }
 
-/* TABLE */
 table {
   width: 100%;
   margin-top: 12px;
@@ -91,7 +77,6 @@ th, td {
   width: 25%;
   padding: 12px;
   text-align: center;
-  border-bottom: 1px solid #eee;
 }
 
 input {
@@ -108,10 +93,8 @@ input {
   border: none;
   padding: 8px;
   border-radius: 6px;
-  cursor: pointer;
 }
 
-/* ADD BUTTON */
 .add-btn {
   margin-top: 10px;
   width: 100%;
@@ -129,9 +112,7 @@ input {
 
 <div class="container">
 
-  <!-- SUMMARY -->
   <div class="summary">
-
     <div class="amount-box">
       TOTAL: ₱ <span id="total">0.00</span>
     </div>
@@ -142,15 +123,14 @@ input {
 
     <div class="row">
       CASH:
-      <input class="cash" type="number" inputmode="decimal" id="cash"
+      <input class="cash" type="text" id="cash"
         onfocus="autoSelect(this)"
-        oninput="computeChange()">
+        oninput="cleanNumber(this); computeChange()">
     </div>
 
     <div class="cash-buttons" id="cashButtons"></div>
   </div>
 
-  <!-- TABLE -->
   <table>
     <thead>
       <tr>
@@ -170,8 +150,32 @@ input {
 <script>
 const denominations = [20, 50, 100, 200, 500, 1000];
 
-function autoSelect(el) {
-  el.select();
+function autoSelect(el) { el.select(); }
+
+// allow only numbers + dot
+function cleanNumber(el) {
+  el.value = el.value.replace(/[^0-9.]/g, '');
+}
+
+function handleEnter(e, el, type) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+
+    const row = el.closest('tr');
+
+    if (type === "price") {
+      row.children[1].querySelector('input').focus();
+    } else if (type === "qty") {
+      let nextRow = row.nextElementSibling;
+
+      if (!nextRow) {
+        addRow();
+        nextRow = document.querySelector('#tbody tr:last-child');
+      }
+
+      nextRow.children[0].querySelector('input').focus();
+    }
+  }
 }
 
 function renderCashButtons() {
@@ -201,13 +205,15 @@ function addRow(autoFocus = true) {
   const row = document.createElement('tr');
 
   row.innerHTML = `
-    <td><input type="number" inputmode="decimal"
+    <td><input type="text"
       onfocus="autoSelect(this)"
-      oninput="handlePrice(this)"></td>
+      oninput="cleanNumber(this); handlePrice(this)"
+      onkeydown="handleEnter(event, this, 'price')"></td>
 
-    <td><input type="number" inputmode="decimal" value="1"
+    <td><input type="text" value="1"
       onfocus="autoSelect(this)"
-      oninput="computeRow(this)"></td>
+      oninput="cleanNumber(this); computeRow(this)"
+      onkeydown="handleEnter(event, this, 'qty')"></td>
 
     <td><span>0.00</span></td>
 
@@ -241,7 +247,7 @@ function computeRow(el) {
   const qty = parseFloat(row.children[1].querySelector('input').value) || 0;
 
   const amount = price * qty;
-  row.children[2].querySelector('span').textContent = amount.toFixed(2);
+  row.children[2].textContent = amount.toFixed(2);
 
   computeTotal();
 }
@@ -267,12 +273,6 @@ function computeChange() {
 
   const changeEl = document.getElementById('change');
   const changeBox = document.getElementById('changeBox');
-
-  if (cash === 0) {
-    changeEl.textContent = "0.00";
-    changeBox.classList.remove("positive", "negative");
-    return;
-  }
 
   changeEl.textContent = change.toFixed(2);
 
